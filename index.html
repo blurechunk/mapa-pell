@@ -3548,7 +3548,7 @@ function makePicker(el,onPick){
   const inp=el.querySelector("input"),ul=el.querySelector("ul");let opts=[],act=-1;
   const hide=()=>{ul.hidden=true;inp.setAttribute("aria-expanded","false");};
   const rank=(k,q)=>{const l=norm(lblOf(k));if(l.startsWith(q))return 0;if((" "+l).includes(" "+q))return 1;if(l.includes(q))return 2;return 3;};
-  const show=()=>{const q=norm(inp.value.trim());opts=ITEMS.filter(k=>!q||norm(lblOf(k)).includes(q)||(isSub(k)&&norm(D[pid(k)].n).includes(q)));if(q)opts=opts.map((k,i)=>[k,rank(k,q),i]).sort((x,y)=>x[1]-y[1]||x[2]-y[2]).map(x=>x[0]);opts=opts.slice(0,14);
+  const show=()=>{const q=norm(inp.value.trim());opts=ITEMS.filter(k=>!q||norm(lblOf(k)).includes(q)||(isSub(k)&&norm(D[pid(k)].n).includes(q)));if(q)opts=opts.map((k,i)=>[k,rank(k,q)*2+(isSub(k)?1:0),i]).sort((x,y)=>x[1]-y[1]||x[2]-y[2]).map(x=>x[0]);opts=opts.slice(0,14);
     ul.innerHTML=opts.length?opts.map((k,i)=>`<li role="option" id="${el.id}-o${i}" data-id="${k}" aria-selected="${i===act}" class="${i===act?"act":""}${isSub(k)?" sub":""}"><span>${esc(lblOf(k))}${isSub(k)?`<small>subtipus · ${esc(D[pid(k)].n)}</small>`:""}</span>${lvb(D[pid(k)].c)}</li>`).join(""):`<li class="none">Cap malaltia ni subtipus amb aquest nom</li>`;
     ul.hidden=false;inp.setAttribute("aria-expanded","true");if(act>=0)inp.setAttribute("aria-activedescendant",`${el.id}-o${act}`);};
   const choose=id=>{inp.value=lblOf(id);hide();onPick(id);};
@@ -3572,7 +3572,7 @@ document.addEventListener("click",e=>{
   const p=e.target.closest("[data-pair]");if(p){const [a,b]=p.dataset.pair.split("|");setPair(a,b);return;}
   const s=e.target.closest("[data-setb]");if(s){setPair(CA,s.dataset.setb);return;}
   const sc=e.target.closest("[data-subcmp]");if(sc){const k=sc.dataset.subcmp,o=Object.keys(SUBS).find(x=>pid(x)===pid(k)&&x!==k);closeD();setPair(k,o);setTimeout(()=>$("#comparador").scrollIntoView({behavior:"smooth"}),30);return;}
-  const c=e.target.closest("[data-cmpwith]");if(c){const id=c.dataset.cmpwith;const dd=REL[id].find(r=>r.t==="dd")||REL[id][0];closeD();setPair(id,dd?dd.to:(id===CB?CA:CB));setTimeout(()=>$("#comparador").scrollIntoView({behavior:"smooth"}),30);}
+  const c=e.target.closest("[data-cmpwith]");if(c){const id=c.dataset.cmpwith;const cp=CPAIRS.find(x=>x.includes(id)),dd=REL[id].find(r=>r.t==="dd")||REL[id][0];closeD();setPair(id,cp?cp.find(x=>x!==id):dd?dd.to:(id===CB?CA:CB));setTimeout(()=>$("#comparador").scrollIntoView({behavior:"smooth"}),30);}
 });
 function sugg(){
   const sib=isSub(CA)?Object.keys(SUBS).filter(k=>pid(k)===pid(CA)&&k!==CA):[];
