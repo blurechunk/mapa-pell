@@ -4,7 +4,7 @@
 (function rv(){
 "use strict";
 if(/claude|anthropic/i.test(location.hostname))return;
-const VERSIO="2026-10-19";
+const VERSIO="2026-10-19b";
 const PONT_DEF="https://script.google.com/macros/s/AKfycbxt9n1CRTAoJkLrSAcvQjlb9X34DmJHaUyEnwhny1TkLZreDD1-Vr2_-2-xUzF-Lk8Fag/exec";
 const LSG=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
 const LSS=(k,v)=>{try{if(v==null||v==="")localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}};
@@ -51,7 +51,7 @@ const respDe=id=>DATA?DATA.respostes.filter(v=>v.proposta===id):[];
 const anc=p=>{try{return JSON.parse(p.ancora||"{}")||{};}catch(e){return {};}};
 const isAgr=id=>typeof GAGR!=="undefined"&&GAGR.has(id);
 const formaLab=id=>isAgr(id)?"Malaltia nova a l'agrupació":"Forma o subtipus nou";
-const tipOf=p=>anc(p).forma?formaLab(String(p.lloc||"").slice(2)):(TIP[p.tipus]||p.tipus);
+const tipOf=p=>p.lloc==="nova"?"Malaltia nova (sense lloc decidit)":anc(p).forma?formaLab(String(p.lloc||"").slice(2)):(TIP[p.tipus]||p.tipus);
 function estat(p){const c=CANV[p.id];if(!c)return "oberta";
   if(respDe(p.id).some(r=>same(r.autor,p.autor)&&/^\[REOBERTA\]/.test(r.text)&&String(r.data).slice(0,10)>=c.v))return "reoberta";return c.e;}
 const stCls=p=>{const e=estat(p);return e==="rebutjada"?"rv-no":(e==="oberta"||e==="reoberta")?"":"rv-fet";};
@@ -64,7 +64,7 @@ function llocLabel(l){l=String(l||"");
   if(l.startsWith("g:")){const k=l.slice(2);return "Grup de l'atles: "+(FAM[k]||(ROWS[k]&&ROWS[k][0])||k);}
   if(l.startsWith("s:")){const [s,x]=l.slice(2).split("|");return secName(s)+(x?" › "+x:"");}
   if(l.startsWith("glos:"))return "Glossari › "+l.slice(5);
-  if(l==="web")return "La web";return l;}
+  if(l==="web")return "La web";if(l==="nova")return "Lloc per decidir";return l;}
 const isMine=p=>ME.nom&&same(p.autor,ME.nom);
 
 /* ---------- context d'una selecció: fitxa o apartat ---------- */
@@ -241,10 +241,39 @@ async function sendForma(){const ctx=draft.ctx,id=ctx.id,rows=rowsOf(id);
   setBusy(true);
   try{await api({accio:"proposa",ambit:"contingut",tipus:"afegir",lloc:ctx.lloc,ancora:{forma:{nom,despres,camps,esquema:esq},ap:"Tipus i formes"},text,font});closePop();toast("Proposta publicada.");}
   catch(e){setBusy(false);showErr(e.message);}}
+function openNova(rect,preId){draft={kind:"nova",ctx:{lloc:"nova",labs:["Què","Qui","Clínica","Clau"]}};cardId=null;
+  const used=new Set();const grp=Object.entries(GFAM).map(([k,g])=>{const ids=g.ids.filter(id=>D[id]);ids.forEach(id=>used.add(id));return ids.length?`<optgroup label="${h(FAM[k]||k)}">${ids.map(id=>`<option value="${id}"${id===preId?" selected":""}>${h(D[id].n)}</option>`).join("")}</optgroup>`:"";}).join("");
+  const rest=Object.keys(D).filter(id=>!used.has(id));
+  openPop(`${head("Proposa una malaltia o forma nova","Contingut nou")}
+   <label>Nom<input type="text" id="rvFNom" maxlength="120" placeholder="p. ex. Escleredema de Buschke"></label>
+   <label>On creus que va?<select id="rvNLloc"><option value="">No ho sé: que es decideixi en la revisió</option>${grp}${rest.length?`<optgroup label="Altres">${rest.map(id=>`<option value="${id}">${h(D[id].n)}</option>`).join("")}</optgroup>`:""}</select></label>
+   <p class="rv-who" id="rvNHint">Si no saps on encaixa, deixa-ho així: en preparar la versió següent es proposarà la fitxa més adequada (com a forma, com a malaltia d'una agrupació o com a nota) i ho decidirà la Mireia.</p>
+   <label>Per què hi va o amb què es relaciona? <small>(opcional)</small><input type="text" id="rvNPq" maxlength="400" placeholder="p. ex. s'associa a la diabetis; es confon amb l'esclerodèrmia"></label>
+   <fieldset class="rv-fs"><legend>Com la descriuries? <small>(omple el que sàpigues)</small></legend>${["Què","Qui","Clínica","Clau"].map((l,i)=>`<label>${l}<input type="text" class="rv-fc" data-i="${i}" maxlength="400"></label>`).join("")}</fieldset>
+   <label>Esquema histològic <small>(opcional: què s'hi veuria al microscopi)</small><textarea id="rvFEsq" maxlength="600" rows="2" style="min-height:56px"></textarea></label>
+   <label>Font <small>(opcional: article, guia, llibre o enllaç)</small><input type="text" id="rvFont" maxlength="600"></label>
+   ${idFields()}
+   <div class="rv-row"><button type="button" class="rv-btn pri" data-rvsend>Publica la proposta</button><button type="button" class="rv-btn" data-rvclose>Cancel·la</button></div>`,rect);
+  const n=pop.querySelector("#rvFNom");if(n)n.focus({preventScroll:true});}
+async function sendNova(){const ctx=draft.ctx;
+  const nom=sp(pop.querySelector("#rvFNom").value),on=pop.querySelector("#rvNLloc").value,pq=sp(pop.querySelector("#rvNPq").value);
+  const vals=[...pop.querySelectorAll(".rv-fc")].map(x=>sp(x.value));const esq=sp(pop.querySelector("#rvFEsq").value),font=sp(pop.querySelector("#rvFont").value);
+  const err=readId();if(err)return showErr(err);
+  if(!nom)return showErr("Escriu el nom.");
+  if(!vals.some(Boolean)&&!pq)return showErr("Descriu-la almenys en un camp o explica amb què es relaciona.");
+  const dup=Object.keys(D).find(id=>same(D[id].n,nom))||Object.keys(TYP).find(id=>(TYP[id].r||[]).some(r=>same(r[0],nom)));
+  if(dup)return showErr(same(D[dup].n,nom)?`Ja té fitxa pròpia: «${D[dup].n}».`:`Ja és a la guia, dins de la fitxa «${D[dup].n}».`);
+  const camps=ctx.labs.map((l,i)=>[l,vals[i]]).filter(x=>x[1]);
+  const lloc=on?"f:"+on:"nova";
+  const text=[`${on?formaLab(on):"Malaltia nova (sense lloc decidit)"}: ${nom}${on?"":" · on va: no ho sé"}`,...(pq?["Relació: "+pq]:[]),...camps.map(([l,v])=>`${l}: ${v}`),...(esq?["Esquema: "+esq]:[])].join("\n");
+  setBusy(true);
+  try{await api({accio:"proposa",ambit:"contingut",tipus:"afegir",lloc,ancora:{forma:{nom,despres:null,camps,esquema:esq,relacio:pq,suggerida:!!on},ap:on?"Tipus i formes":""},text,font});closePop();toast(on?"Proposta publicada a la fitxa «"+D[on].n+"».":"Proposta publicada. Es decidirà on va.");}
+  catch(e){setBusy(false);showErr(e.message);}}
 function helpPop(rect){cardId=null;draft=null;openPop(`${head("Com proposar un canvi","Mode corrector")}
   <ul class="rv-help">
    <li><b>Corregir, eliminar, preguntar o afegir al glossari</b> Selecciona el text i tria l'opció a la barra que apareix.</li>
    <li><b>Afegir text</b> Passa per sobre d'un paràgraf i toca el botó <span class="rv-k">+</span> de la cantonada.</li>
+   <li><b>Malaltia nova sense saber on va</b> Botó <span class="rv-k">+ Malaltia nova</span> d'aquesta franja: tria «No ho sé» i explica amb què es relaciona.</li>
    <li><b>Forma o subtipus nou</b> A la fitxa, botó <span class="rv-k">+ Forma o subtipus nou</span> de la capçalera o del final de «Tipus i formes». També el <span class="rv-k">+ Forma nova</span> de cada forma, per posar-la just després.</li>
    <li><b>Imatges i esquemes</b> Clica el punt exacte de la foto o del dibuix.</li>
    <li><b>Organització</b> Botó «Proposa un canvi d'organització» de cada fitxa, subapartat o grup de l'atles (moure, fusionar, separar…).</li>
@@ -306,7 +335,7 @@ function openForm(kind,ctx,rect){const F=FORM[kind];draft={kind,ctx};
    ${F.nofont?"":`<label>Font <small>(opcional: article, guia, llibre o enllaç)</small><input type="text" id="rvFont" maxlength="600"></label>`}
    ${idFields()}
    <div class="rv-row"><button type="button" class="rv-btn pri" data-rvsend>Publica la proposta</button><button type="button" class="rv-btn" data-rvclose>Cancel·la</button></div>`,rect);}
-async function sendForm(){if(!draft)return;if(draft.kind==="forma")return sendForma();const F=FORM[draft.kind],ctx=draft.ctx;
+async function sendForm(){if(!draft)return;if(draft.kind==="forma")return sendForma();if(draft.kind==="nova")return sendNova();const F=FORM[draft.kind],ctx=draft.ctx;
   const txt=(pop.querySelector("#rvTxt")||{}).value||"";const font=((pop.querySelector("#rvFont")||{}).value||"").trim();
   const err=readId();if(err)return showErr(err);
   let tipus=draft.kind,ambit="contingut";const A=Object.assign({},ctx.ancora||{});
@@ -325,7 +354,7 @@ function cardHTML(p){const A=anc(p),c=recompte(p.id),vs=votsDe(p.id),rs=respDe(p
   let body="";
   if(A.t&&p.tipus!=="assenyalar")body+=`<p class="rv-q"><small>${p.tipus==="afegir"?"Després de":p.tipus==="dubte"?"Sobre":p.tipus==="terme_nou"?"Al text":"Text actual"}</small>${h(p.tipus==="afegir"?"…"+A.t.slice(-90):A.t)}</p>`;
   if(A.terme)body+=`<p class="rv-q new"><small>Terme</small>${h(A.terme)}</p>`;
-  if(A.forma){const F=A.forma;body+=`<div class="rv-q new rv-fm"><small>${F.despres?"Després de «"+h(F.despres)+"»":"Al final de la taula"}</small><b>${h(F.nom)}</b><dl>${(F.camps||[]).map(([l,v])=>`<dt>${h(l)}</dt><dd>${h(v)}</dd>`).join("")}${F.esquema?`<dt>Esquema</dt><dd>${h(F.esquema)}</dd>`:""}</dl></div>`;}
+  if(A.forma){const F=A.forma;body+=`<div class="rv-q new rv-fm"><small>${p.lloc==="nova"?"On va: no ho sap":F.suggerida?"Fitxa suggerida: "+h(llocLabel(p.lloc)):F.despres?"Després de «"+h(F.despres)+"»":"Al final de la taula"}</small><b>${h(F.nom)}</b><dl>${F.relacio?`<dt>Relació</dt><dd>${h(F.relacio)}</dd>`:""}${(F.camps||[]).map(([l,v])=>`<dt>${h(l)}</dt><dd>${h(v)}</dd>`).join("")}${F.esquema?`<dt>Esquema</dt><dd>${h(F.esquema)}</dd>`:""}</dl></div>`;}
   else if(p.text)body+=`<p class="rv-q new"><small>${p.tipus==="corregir"?"Proposta":p.tipus==="dubte"?"Pregunta":p.tipus==="eliminar"?"Motiu":"Proposta"}</small>${h(p.text)}</p>`;
   if(p.font)body+=`<p class="rv-who">Font: ${/^https?:\/\//.test(p.font)?`<a href="${h(p.font)}" target="_blank" rel="noopener">${h(p.font)}</a>`:h(p.font)}</p>`;
   if(orphan.has(p.id)&&!C)body+=`<p class="rv-who">No he trobat aquest fragment a la versió actual de la guia.</p>`;
@@ -341,7 +370,7 @@ function cardHTML(p){const A=anc(p),c=recompte(p.id),vs=votsDe(p.id),rs=respDe(p
   if(mine&&C)acts+=`<div class="rv-row"><button type="button" class="rv-btn pri" data-rvok>Valido la resolució</button><button type="button" class="rv-btn" data-rvreob>No hi estic d'acord</button></div><div id="rvReob" hidden><label>Explica per què<input type="text" id="rvReobT" maxlength="1500"></label><div class="rv-row" style="margin-top:6px"><button type="button" class="rv-btn pri" data-rvreobs>Reobre la proposta</button></div></div>`;
   if(mine&&!C)acts+=`<div class="rv-row"><button type="button" class="rv-btn" data-rvret>Retira la proposta</button></div>`;
   if(ME.admin)acts+=`<div class="rv-row"><button type="button" class="rv-btn" data-rvadm>Tanca-la (administració)</button></div>`;
-  const go=cardGo?`<button type="button" class="rv-link" data-rvgo="${h(p.id)}">Ves al lloc</button>`:"";
+  const go=cardGo&&p.lloc!=="nova"?`<button type="button" class="rv-link" data-rvgo="${h(p.id)}">Ves al lloc</button>`:"";
   return `${head(tipOf(p),llocLabel(p.lloc)+(A.ap&&!p.lloc.startsWith("s:")?" › "+A.ap:""))}
    <div class="rv-row">${chip(p)}<span class="rv-who">${h(p.autor)} · ${h(dia(p.data))}</span>${go}</div>
    ${body}<div class="rv-sep"></div><div class="rv-votes">${votes}${vlist}</div>
@@ -364,7 +393,7 @@ function whoPop(rect){cardId=null;draft=null;openPop(`${head("Qui ets",ME.codi?"
 /* franja del mode corrector */
 function renderBand(){band.hidden=!MODE;if(!MODE)return;
   band.innerHTML=`<b>Mode corrector</b><span>Selecciona text, fes servir els botons + o clica una imatge.</span><button type="button" data-rvhelp>Com proposar?</button>${netErr?`<span>· ${h(netErr)}</span>`:""}<span class="sp"></span>
-  ${ME.nom?`<span>Ets <b>${h(ME.nom)}</b></span>`:""}<button type="button" data-rvwho>${ME.nom&&ME.codi?"Canvia el nom":"Identifica't"}</button><button type="button" data-rvweb>Proposta general</button><button type="button" data-rvmode>Surt <kbd>Ctrl+K</kbd></button>`;}
+  ${ME.nom?`<span>Ets <b>${h(ME.nom)}</b></span>`:""}<button type="button" data-rvwho>${ME.nom&&ME.codi?"Canvia el nom":"Identifica't"}</button><button type="button" data-rvnova>+ Malaltia nova</button><button type="button" data-rvweb>Proposta general</button><button type="button" data-rvmode>Surt <kbd>Ctrl+K</kbd></button>`;}
 function setMode(on){MODE=!!on;document.body.classList.toggle("rv-mode",MODE);if(!MODE){hidePlus();}
   document.querySelectorAll("[data-rvmode].rv-tg,.rv-dt").forEach(b=>b.setAttribute("aria-pressed",MODE?"true":"false"));
   renderBand();applyMarks();if(MODE&&(!ME.codi||!ME.nom))whoPop(null);}
@@ -428,6 +457,7 @@ document.addEventListener("click",e=>{const t=e.target;if(!t.closest)return;let 
   if((b=t.closest("[data-rvwho]"))){whoPop(b.getBoundingClientRect());return;}
   if((b=t.closest("[data-rvwhos]"))){const err=readId();if(err)return showErr(err);closePop();toast("Desat.");load(false);renderBand();return;}
   if((b=t.closest("[data-rvforma]"))){openForma(b.dataset.rvforma,null,b.getBoundingClientRect());return;}
+  if((b=t.closest("[data-rvnova]"))){openNova(b.getBoundingClientRect(),null);return;}
   if((b=t.closest("[data-rvhelp]"))){helpPop(b.getBoundingClientRect());return;}
   if((b=t.closest("[data-rvweb]"))){openForm("web",{lloc:"web"},b.getBoundingClientRect());return;}
   if((b=t.closest("[data-rvorg]"))){openForm("org",{lloc:b.dataset.rvorg},b.getBoundingClientRect());return;}
@@ -450,7 +480,7 @@ document.addEventListener("click",e=>{const t=e.target;if(!t.closest)return;let 
   if((b=t.closest("[data-rvret]"))){act({accio:"estat",proposta:cardId,estat:"retirada"},"Proposta retirada.");return;}
   if((b=t.closest("[data-rvadm]"))){act({accio:"estat",proposta:cardId,estat:"arxivada",admin:ME.admin},"Proposta tancada.");return;}
 });
-document.addEventListener("mousedown",e=>{if(pop.hidden)return;const t=e.target;if(pop.contains(t)||bar.contains(t)||(t.closest&&t.closest("[data-rvp],[data-rvitem],[data-rvlist],[data-rvorg],[data-rvwho],[data-rvweb],[data-rvdef],[data-rvforma],[data-rvhelp],.rv-plus")))return;
+document.addEventListener("mousedown",e=>{if(pop.hidden)return;const t=e.target;if(pop.contains(t)||bar.contains(t)||(t.closest&&t.closest("[data-rvp],[data-rvitem],[data-rvlist],[data-rvorg],[data-rvwho],[data-rvweb],[data-rvdef],[data-rvforma],[data-rvhelp],[data-rvnova],.rv-plus")))return;
   if(draft&&[...pop.querySelectorAll("textarea,input[type=text]:not(#rvNom):not(#rvFont)")].some(x=>x.value.trim()&&x.value!==((draft.ctx.ancora||{}).t||"")))return;closePop();cardId=null;});
 addEventListener("keydown",e=>{
   if((e.ctrlKey||e.metaKey)&&!e.altKey&&!e.shiftKey&&(e.key==="k"||e.key==="K")){e.preventDefault();e.stopPropagation();setMode(!MODE);return;}
@@ -492,7 +522,7 @@ sec.innerHTML=`<div class="sec-head"><div class="eyebrow">9 · Revisió en grup<
   </div>`;
 const foot=$1("footer");if(foot)foot.parentNode.insertBefore(sec,foot);else document.body.appendChild(sec);
 function renderAcc(){const acc=$1("#rvAcc");const ok=!!(ME.codi&&DATA);$1("#rvMain").hidden=!ok;
-  if(ok){acc.innerHTML=`<div class="rv-row" style="justify-content:space-between"><span style="font-size:14.5px">Ets <b>${h(ME.nom||"—")}</b>. Activa el mode corrector amb <b>Ctrl+K</b> (Cmd+K al Mac) o el botó ✎ de la barra superior.</span><span class="rv-row"><button type="button" class="rv-btn" data-rvwho>Canvia el nom</button><button type="button" class="rv-btn" data-rvweb>Proposta general</button><button type="button" class="rv-btn" id="rvRef">Actualitza</button></span></div>${netErr?`<p class="rv-err">${h(netErr)}</p>`:""}`;return;}
+  if(ok){acc.innerHTML=`<div class="rv-row" style="justify-content:space-between"><span style="font-size:14.5px">Ets <b>${h(ME.nom||"—")}</b>. Activa el mode corrector amb <b>Ctrl+K</b> (Cmd+K al Mac) o el botó ✎ de la barra superior.</span><span class="rv-row"><button type="button" class="rv-btn" data-rvwho>Canvia el nom</button><button type="button" class="rv-btn" data-rvnova>+ Malaltia nova</button><button type="button" class="rv-btn" data-rvweb>Proposta general</button><button type="button" class="rv-btn" id="rvRef">Actualitza</button></span></div>${netErr?`<p class="rv-err">${h(netErr)}</p>`:""}`;return;}
   acc.innerHTML=`<p style="font-size:15px">Per veure les propostes i fer-ne, escriu el teu nom i el codi del grup. Només cal fer-ho una vegada en aquest navegador.</p>
    <ol class="rv-steps"><li>Selecciona qualsevol text de la guia i tria què vols proposar a la barra que apareix.</li><li>Amb el mode corrector (<b>Ctrl+K</b>) també pots afegir contingut al final d'un bloc, assenyalar punts de les imatges i marcar fitxes com a corregides.</li><li>Vota les propostes dels altres: d'acord, en contra o innecessària.</li></ol>
    <div class="rv-row"><input type="text" id="rvANom" placeholder="El teu nom" maxlength="60" style="max-width:240px" value="${h(ME.nom)}" aria-label="El teu nom"><input type="password" id="rvACodi" placeholder="Codi del grup" maxlength="80" style="max-width:220px" autocomplete="off" aria-label="Codi del grup"><button type="button" class="rv-btn pri" id="rvAOk">Entra</button></div>${netErr?`<p class="rv-err">${h(netErr)}</p>`:""}`;}
@@ -524,13 +554,13 @@ function renderNav(){const n=document.querySelector("nav.top .rv-n");if(n){const
 function genExport(){if(!DATA)return;const today=new Date().toISOString().slice(0,10);
   const open=PR().filter(p=>!CANV[p.id]||estat(p)==="reoberta");
   const B={favor:[],discutida:[],contra:[],pocs:[],dubte:[],decisio:[],reob:[]};
-  open.forEach(p=>{if(estat(p)==="reoberta")B.reob.push(p);else if(p.tipus==="dubte")B.dubte.push(p);else if(p.ambit==="organitzacio"||p.ambit==="web")B.decisio.push(p);else B[consens(p)].push(p);});
+  open.forEach(p=>{if(estat(p)==="reoberta")B.reob.push(p);else if(p.tipus==="dubte")B.dubte.push(p);else if(p.ambit==="organitzacio"||p.ambit==="web"||p.lloc==="nova")B.decisio.push(p);else B[consens(p)].push(p);});
   const fmt=p=>{const A=anc(p),c=recompte(p.id),vs=votsDe(p.id).filter(v=>v.motiu),rs=respDe(p.id);const L=[];
     L.push(`### ${p.id} · ${tipOf(p)} · ${llocLabel(p.lloc)}${A.ap&&!p.lloc.startsWith("s:")?" › "+A.ap:""}`);
     L.push(`- Lloc (clau): \`${p.lloc}\`${A.img?` · imatge \`${A.img}\` · punt x=${A.x}% y=${A.y}%`:""}`);
     if(A.t)L.push(`- ${p.tipus==="afegir"?"Inserir just després de":"Text de la guia"}: «${A.t}»`),L.push(`- Context: «…${A.pre||""}[${A.t}]${A.suf||""}…»`);
     if(A.terme)L.push(`- Terme: ${A.terme}`);
-    if(A.forma){const F=A.forma;L.push(`- Nom: ${F.nom}`,`- Posició a «Tipus i formes»: ${F.despres?"després de «"+F.despres+"»":"al final de la taula"}`);(F.camps||[]).forEach(([l,v])=>L.push(`  - ${l}: ${v}`));if(F.esquema)L.push(`- Esquema histològic proposat: ${F.esquema}`);}
+    if(A.forma){const F=A.forma;L.push(`- Nom: ${F.nom}`,p.lloc==="nova"?`- Ubicació: no decidida. Proposa on encaixa (forma d'una fitxa, malaltia d'una agrupació, nota o fitxa nova), amb arguments, i no l'apliquis sense l'aprovació de la Mireia.`:F.suggerida?`- Fitxa suggerida pel proponent (comprova si és la més adequada): ${llocLabel(p.lloc)}`:`- Posició a «Tipus i formes»: ${F.despres?"després de «"+F.despres+"»":"al final de la taula"}`);if(F.relacio)L.push(`- Relació: ${F.relacio}`);(F.camps||[]).forEach(([l,v])=>L.push(`  - ${l}: ${v}`));if(F.esquema)L.push(`- Esquema histològic proposat: ${F.esquema}`);}
     else if(p.text)L.push(`- ${p.tipus==="corregir"?"Text proposat":p.tipus==="dubte"?"Pregunta":p.tipus==="eliminar"?"Motiu":"Proposta"}: ${p.text}`);
     if(p.font)L.push(`- Font: ${p.font}`);
     L.push(`- Proposa: ${p.autor} (${String(p.data).slice(0,10)})`);
@@ -545,7 +575,7 @@ function genExport(){if(!DATA)return;const today=new Date().toISOString().slice(
     ["3. Consens en contra","Tanca-les com a «rebutjada» a CANVIS, amb el motiu principal del grup.",B.contra],
     ["4. Sense prou vots (menys de 2)","Deixa-les obertes, excepte els errors objectius que puguis verificar amb fonts: aquests corregeix-los.",B.pocs],
     ["5. Dubtes","Respon-los amb una entrada a CANVIS (e:\"resposta\"). Si el dubte revela un error de la guia, corregeix-lo.",B.dubte],
-    ["6. Requereixen la decisió de la Mireia (organització i la web)","No les apliquis. Per a cadascuna, explica què caldria modificar, quant creixeria la guia i com es podria implementar.",B.decisio],
+    ["6. Requereixen la decisió de la Mireia (organització, la web i contingut nou sense lloc)","No les apliquis. Per a cadascuna, explica què caldria modificar, quant creixeria la guia i com es podria implementar.",B.decisio],
     ["7. Reobertes pel proponent","Revisa la resolució anterior a la llum del comentari del proponent.",B.reob]];
   const md=[`# Propostes del grup · Mapa de la pell`,``,`Generat el ${today} a partir de la versió ${VERSIO} de la guia. ${open.length} propostes, ${DATA.noms.length} participants.`,``,
     `Instruccions per a Claude: aplica els criteris del projecte «Atles dermatològic» (català normatiu, dades verificades, guia breu, esquemes revisats visualment, fotos amb llicència lliure). Per a cada proposta tractada, afegeix una entrada a la constant CANVIS amb l'identificador de la proposta: {e:"incorporada"|"adaptada"|"rebutjada"|"resposta", v:"AAAA-MM-DD", n:"explicació breu"}. Després comprova la guia sencera, publica-la i resumeix els canvis.`,``,
