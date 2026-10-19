@@ -6,7 +6,7 @@ const {chromium}=require('playwright');const out=process.argv[2];
 await p.goto('file:///home/claude/mapa-pell.html');await p.waitForTimeout(600);
 const r=await p.evaluate(()=>({grups:Object.keys(GFAM).map(g=>({g,n:FAM[g]||g,ids:GFAM[g].ids})),
  fitxes:Object.fromEntries(Object.keys(D).map(id=>[id,{n:D[id].n,agr:GAGR.has(id),formes:TYP[id]?TYP[id].r.map(x=>x[0]):[],
-  fotos:(IMG[id]||[]).map(x=>({f:x[0],peu:x[5],src:x[4]}))}])),glos:GLOS.map(g=>({k:g.k,t:g.t}))}));
+  fotos:(IMG[id]||[]).map(x=>({f:x[0],peu:x[5],src:x[4]}))}])),glos:GLOS.map(g=>({k:g.k,t:g.t})),gimg:Object.values(GIMG).flat().map(x=>x[4])}));
 const us={};
 for(const id of Object.keys(r.fitxes)){await p.evaluate(id=>openD(id),id);await p.waitForTimeout(25);
  const gl=await p.$$eval('#drawer button.gl',a=>[...new Set(a.map(x=>+x.dataset.gl))]);

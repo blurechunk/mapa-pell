@@ -3,7 +3,7 @@
 import sys,json,urllib.parse
 sys.path.insert(0,'/home/claude/eines');from objectius import OBJ,GLOS_OBJ
 d=json.load(open(sys.argv[1]))
-us=sorted({urllib.parse.unquote(f['src'].split('/')[-1]).replace('_',' ').removeprefix('File:') for x in d['fitxes'].values() for f in x['fotos']})
+us=sorted({urllib.parse.unquote(u.split('/')[-1]).replace('_',' ').removeprefix('File:') for u in [f['src'] for x in d['fitxes'].values() for f in x['fotos']]+d.get('gimg',[])})
 obj=[{"f":f,"p":p,"t":t,"q":q,"v":v,"c":c} for f,p,t,q,v,c in OBJ]
 GK={g['k']:g['t'] for g in d['glos']};FX=dict(d['fitxes']);gids=[]
 for k,t,q,v,c,fx in GLOS_OBJ:

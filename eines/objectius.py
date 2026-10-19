@@ -167,6 +167,7 @@ OBJ += [
  ("dermatomiositis","Eritema en xal i en V","P","shawl sign dermatomyositis","Eritema violaci a l'esquena alta, les espatlles o l'escot",0),
  ("dermatomiositis","Eritema extensor","P","dermatomyositis extensor erythema","Eritema violaci a colzes, genolls o cuixes",0),
  ("vitiligen","Vitiligen segmentari","P","segmental vitiligo","Màcules acròmiques unilaterals en una banda",0),
+ ("vasc_mitja","Behçet: àfta oral","P","Behcet disease oral ulcer","Úlcera oral rodona amb halo eritematós",0),
 ]
 
 # Termes del glossari que surten en més d'una fitxa: la foto va al desplegable del glossari.
