@@ -154,6 +154,21 @@ OBJ = [
  ("hamartomes","Quist triquilemal (pilar)","F","pilar cyst scalp trichilemmal","Nòdul llis, ferm, al cuir cabellut",0),
 ]
 
+# Fotos retirades el 19-10-2026 (dubtes de llicència o de diagnòstic): cal substituir-les.
+OBJ += [
+ ("pemfig_vulgar","Pèmfig vulgar: erosions cutànies","F","pemphigus vulgaris skin erosions","Erosions i ampolles flàccides a la pell",0),
+ ("penfigoide","Pemfigoide ampul·lar: ampolles tenses","P","bullous pemphigoid tense blisters","Ampolles tenses sobre pell eritematosa o normal",0),
+ ("eritema_nodos","Foto clínica actual","P","erythema nodosum shins","Nòduls eritematosos dolorosos a la cara anterior de les cames",0),
+ ("cec","Banya cutània","F","cutaneous horn","Projecció de queratina en forma de banya",0),
+ ("tbc_cut","Escrofuloderma","F","scrofuloderma","Nòdul o úlcera sobre un gangli limfàtic, sovint al coll",0),
+ ("dci","Crònica acumulativa","F","chronic irritant hand dermatitis","Sequedat, descamació i fissures a les mans",0),
+ ("liquen_escleros","Placa extragenital","F","extragenital lichen sclerosus","Placa blanca, atròfica i brillant fora dels genitals",0),
+ ("dermatomiositis","Pàpules de Gottron","P","Gottron papules dermatomyositis","Pàpules violàcies sobre les articulacions dels dits",0),
+ ("dermatomiositis","Eritema en xal i en V","P","shawl sign dermatomyositis","Eritema violaci a l'esquena alta, les espatlles o l'escot",0),
+ ("dermatomiositis","Eritema extensor","P","dermatomyositis extensor erythema","Eritema violaci a colzes, genolls o cuixes",0),
+ ("vitiligen","Vitiligen segmentari","P","segmental vitiligo","Màcules acròmiques unilaterals en una banda",0),
+]
+
 # Termes del glossari que surten en més d'una fitxa: la foto va al desplegable del glossari.
 # (clau del glossari, terme, consulta, què s'ha de veure, cara, fitxes si el terme és nou)
 GLOS_OBJ = [

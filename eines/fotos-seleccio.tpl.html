@@ -156,7 +156,7 @@ const FONTS={
    return {mes:!!j.continue,r:ps.map(p=>{const ii=(p.imageinfo||[])[0]||{},m=ii.extmetadata||{},g=k=>(m[k]||{}).value||"";const L=licCommons(g("LicenseShortName"));
     const tit=p.title.replace(/^File:/,"");
     return {font:font,id:"c:"+p.pageid,titol:tit,pagina:ii.descriptionurl,img:ii.thumburl||ii.url,mini:ii.thumburl,amp:ii.width,alc:ii.height,
-     autor:txt(g("Artist"))||txt(g("Credit")),lic:L.t,licOk:L.ok,licUrl:g("LicenseUrl"),desc:txt(g("ImageDescription")),usada:USADES.has(tit.replace(/_/g," "))};})};}},
+     autor:txt(g("Artist"))||txt(g("Credit")),lic:VETATS.test(txt(g("Artist")))?"Autor amb fotos d'origen dubtós":L.t,licOk:L.ok&&!VETATS.test(txt(g("Artist"))),licUrl:g("LicenseUrl"),desc:txt(g("ImageDescription")),usada:USADES.has(tit.replace(/_/g," "))};})};}},
  openverse:{n:"Openverse",async cerca(q,pag){
    const u="https://api.openverse.org/v1/images/?q="+encodeURIComponent(q)+"&license=by,by-sa,cc0,pdm&page_size=20&page="+(pag+1)+(S.ovSens?"&mature=true":"");
    const rs=await fetch(u);if(rs.status===429)throw new Error("Openverse limita les cerques anònimes: espera uns minuts.");
@@ -190,6 +190,8 @@ const FONTS={
    return {mes:!!next&&arts.length>=8,cursor:next,r,avis:amagades?amagades+" figures amagades perquè el peu diu que són reproduïdes d'una altra font.":""};}},
  manual:{n:"Altres webs (a mà)"}
 };
+/* Usuaris de Commons amb fotos d'altres pujades com a pròpies: es descarten sempre. */
+const VETATS=/\b(Mohammad2018|Masryyy)\b/i;
 const ORDRE=["commons","phil","epmc","openverse","manual"];
 let F="commons",RES={},PAG=0,ACT=null;
 
