@@ -149,13 +149,13 @@ function licOV(r){const m={by:"CC BY","by-sa":"CC BY-SA",cc0:"CC0",pdm:"Domini p
 
 /* ---------- Fonts ---------- */
 const FONTS={
- commons:{n:"Wikimedia Commons",async cerca(q,pag){
+ commons:{n:"Wikimedia Commons",async cerca(q,pag,font="commons"){
    const u="https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=24&gsroffset="+(pag*24)+"&gsrsearch="+encodeURIComponent(q+" filetype:bitmap")+"&prop=imageinfo&iiprop=url|size|extmetadata|mime&iiurlwidth=1280&iiextmetadatafilter=LicenseShortName|Artist|ImageDescription|LicenseUrl|Credit|ObjectName";
    const j=await (await fetch(u)).json();if(j.error)throw new Error(j.error.info);
    const ps=Object.values((j.query||{}).pages||{}).sort((a,b)=>a.index-b.index);
    return {mes:!!j.continue,r:ps.map(p=>{const ii=(p.imageinfo||[])[0]||{},m=ii.extmetadata||{},g=k=>(m[k]||{}).value||"";const L=licCommons(g("LicenseShortName"));
     const tit=p.title.replace(/^File:/,"");
-    return {font:"commons",id:"c:"+p.pageid,titol:tit,pagina:ii.descriptionurl,img:ii.thumburl||ii.url,mini:ii.thumburl,amp:ii.width,alc:ii.height,
+    return {font:font,id:"c:"+p.pageid,titol:tit,pagina:ii.descriptionurl,img:ii.thumburl||ii.url,mini:ii.thumburl,amp:ii.width,alc:ii.height,
      autor:txt(g("Artist"))||txt(g("Credit")),lic:L.t,licOk:L.ok,licUrl:g("LicenseUrl"),desc:txt(g("ImageDescription")),usada:USADES.has(tit.replace(/_/g," "))};})};}},
  openverse:{n:"Openverse",async cerca(q,pag){
    const u="https://api.openverse.org/v1/images/?q="+encodeURIComponent(q)+"&license=by,by-sa,cc0,pdm&page_size=20&page="+(pag+1)+(S.ovSens?"&mature=true":"");
@@ -165,17 +165,32 @@ const FONTS={
     return {font:"openverse",id:"o:"+x.id,titol:x.title||"(sense títol)",pagina:x.foreign_landing_url,img:x.url,mini:x.thumbnail,ovId:x.id,amp:x.width,alc:x.height,
      autor:x.creator||"",autorUrl:x.creator_url||"",lic:L.t,licOk:L.ok,licUrl:x.license_url||"",desc:[x.provider?("Font: "+x.provider):"",(x.tags||[]).map(t=>t.name).slice(0,12).join(", ")].filter(Boolean).join(" · "),verificar:true};});
    return {mes:(j.page_count||1)>pag+1,r,amagats:(j.results||[]).length-r.length};}},
- openi:{n:"Open-i (articles de PMC)",async cerca(q,pag){
-   const tip=S.oiTipus??"ph";
-   const base="https://openi.nlm.nih.gov/api/search?coll=pmc&query="+encodeURIComponent(q)+"&m="+(pag*24+1)+"&n="+(pag*24+24)+(tip?"&it="+tip:"");
-   let rs=await fetch(base+"&lic=by"),j=await rs.json(),filtre=true;
-   if(!j.list||!j.list.length){rs=await fetch(base);j=await rs.json();filtre=false;}
-   const r=(j.list||[]).map(x=>({font:"openi",id:"i:"+(x.uid||"")+":"+((x.image||{}).id||""),titol:txt(x.title),pagina:(x.pmc_url||"").replace(/^http:/,"https:"),img:"https://openi.nlm.nih.gov"+(x.imgLarge||""),mini:"https://openi.nlm.nih.gov"+(x.imgThumbLarge||x.imgThumb||""),
-     autor:"Autors de l'article · "+(x.journal_title||""),lic:filtre?"Per verificar (filtre CC BY)":"Per verificar",licOk:true,verificar:true,desc:txt((x.image||{}).caption),pmcid:x.uid}));
-   return {mes:(j.total||0)>pag*24+24,r,avis:filtre?"":"El filtre de llicència d'Open-i no ha retornat res; es mostren tots els resultats. Molts articles són NC: comprovaré la llicència de cada foto abans d'incorporar-la."};}},
- manual:{n:"PHIL i altres (a mà)"}
+ phil:{n:"CDC PHIL",async cerca(q,pag){return FONTS.commons.cerca(q+' hastemplate:"CDC-PHIL"',pag,"phil");}},
+ epmc:{n:"Articles (Europe PMC)",async cerca(q,pag){
+   const L={"cc by":"CC BY","cc by-sa":"CC BY-SA","cc0":"CC0"};
+   const cur=pag?(RES.epmc&&RES.epmc.cursor)||"*":"*";
+   const qq=`(${q}) AND OPEN_ACCESS:y AND (LICENSE:"cc by" OR LICENSE:"cc by-sa" OR LICENSE:"cc0")`+(S.epmcCas!==false?' AND PUB_TYPE:"Case Reports"':"");
+   const rs=await fetch("https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&resultType=core&pageSize=8&cursorMark="+encodeURIComponent(cur)+"&query="+encodeURIComponent(qq));
+   if(!rs.ok)throw new Error("HTTP "+rs.status);const j=await rs.json();
+   const arts=((j.resultList||{}).result||[]).filter(a=>a.pmcid);
+   const mots=q.toLowerCase().split(/[^a-zà-ÿ0-9-]+/).filter(w=>w.length>3&&!/^(with|from|skin|lesions?|disease|syndrome|rash|stage|type)$/.test(w));
+   const r=[];let amagades=0;
+   for(const a of arts){let x;try{const t=await fetch("https://www.ebi.ac.uk/europepmc/webservices/rest/"+a.pmcid+"/fullTextXML");if(!t.ok)continue;x=new DOMParser().parseFromString(await t.text(),"application/xml");}catch(e){continue;}
+    const lic=L[(a.license||"").toLowerCase()];if(!lic)continue;
+    for(const f of x.querySelectorAll("fig")){const g=f.querySelector("graphic");if(!g)continue;
+     let h=g.getAttribute("xlink:href")||g.getAttributeNS("http://www.w3.org/1999/xlink","href")||"";if(!h)continue;if(!/\.(jpe?g|png|gif|tiff?)$/i.test(h))h+=".jpg";
+     const etiq=txt((f.querySelector("label")||{}).textContent||"");const cap=txt((f.querySelector("caption")||{}).textContent||"");
+     if(/reproduced|reprinted|permission|©|copyright/i.test(cap)){amagades++;continue;}
+     if(mots.length&&!mots.some(w=>cap.toLowerCase().includes(w))){continue;}
+     const img="https://europepmc.org/articles/"+a.pmcid+"/bin/"+h;
+     r.push({font:"europepmc",id:"e:"+a.pmcid+":"+h,titol:(etiq?etiq+" · ":"")+txt(a.title),pagina:"https://europepmc.org/article/PMC/"+a.pmcid.replace(/^PMC/,""),img,mini:img,
+      autor:(a.authorString||"").replace(/\.$/,"")+" · "+(a.journalInfo&&a.journalInfo.journal?a.journalInfo.journal.title:(a.journalTitle||""))+" ("+(a.pubYear||"")+")",
+      lic:lic+" (article)",licOk:true,licUrl:"",verificar:true,desc:cap,pmcid:a.pmcid});}}
+   RES.epmc=RES.epmc||{};const next=j.nextCursorMark&&j.nextCursorMark!==cur?j.nextCursorMark:null;
+   return {mes:!!next&&arts.length>=8,cursor:next,r,avis:amagades?amagades+" figures amagades perquè el peu diu que són reproduïdes d'una altra font.":""};}},
+ manual:{n:"Altres webs (a mà)"}
 };
-const ORDRE=["commons","openverse","openi","manual"];
+const ORDRE=["commons","phil","epmc","openverse","manual"];
 let F="commons",RES={},PAG=0,ACT=null;
 
 /* ---------- Llista d'objectius ---------- */
@@ -215,7 +230,7 @@ function renderTriades(){const k=ACT,L=S.sel[k]||[];const el=$("#triades");if(!e
  el.innerHTML=`<b>Triades (${L.length})</b>`+L.map((it,i)=>`<div class="it"><img src="${esc(vista(it))}" alt="" data-zoom="${esc(it.local?"":it.img)}"><div style="display:grid;gap:4px;font-size:12.5px">
   <div><b>${esc(it.titol)}</b> · <a href="${esc(it.pagina)}" target="_blank" rel="noopener">font</a></div>
   <div>${esc(it.autor||"autor desconegut")} · <span class="lic ${it.verificar?"ver":"ok"}">${esc(it.lic)}</span>${it.verificar?" <span class='mut'>(la comprovaré)</span>":""}</div>
-  ${it.local&&!BL[it.id]?`<div class="avis">Falta el fitxer: torna'l a arrossegar a «PHIL i altres».</div>`:""}
+  ${it.local&&!BL[it.id]?`<div class="avis">Falta el fitxer: torna'l a arrossegar a «Altres webs (a mà)».</div>`:""}
   <label><input type="checkbox" data-i="${i}" class="cCara"${it.cara?" checked":""}> Surt la cara (cal tapar els ulls o retallar)</label>
   <textarea data-i="${i}" class="tNota" placeholder="Nota: què ensenya, quina part retallar…">${esc(it.nota||"")}</textarea></div>
   <div><button data-i="${i}" class="bTreu">Treu</button></div></div>`).join("");
@@ -225,32 +240,32 @@ function renderTriades(){const k=ACT,L=S.sel[k]||[];const el=$("#triades");if(!e
 
 async function cerca(mes){const o=obAct();if(!o||F==="manual")return;const f=F,q=$("#q")?$("#q").value.trim():(S.q[ACT]||o.q);
  if(!mes){RES[f]={r:[],carrega:true};PAG=0;}else RES[f].carrega=true;renderRes();
- try{const r=await FONTS[f].cerca(q,PAG);if(F!==f)return;const prev=mes?RES[f].r:[];RES[f]={r:prev.concat(r.r),mes:r.mes,avis:r.avis,amagats:(mes?RES[f].amagats||0:0)+(r.amagats||0)};}
+ try{const r=await FONTS[f].cerca(q,PAG);if(F!==f)return;const prev=mes?RES[f].r:[];RES[f]={r:prev.concat(r.r),mes:r.mes,cursor:r.cursor,avis:r.avis,amagats:(mes?RES[f].amagats||0:0)+(r.amagats||0)};}
  catch(e){RES[f]={r:mes?RES[f].r:[],err:e instanceof SyntaxError?"el servei no ha retornat dades (potser és en manteniment)":/fetch|network/i.test(e.message||"")?"el navegador no hi ha pogut connectar":(e.message||String(e))};}
  renderRes();}
 
 function renderRes(){const el=$("#res");if(!el)return;
  if(F==="manual"){renderManual(el);return;}
  const R=RES[F]||{r:[]};const sel=new Set((S.sel[ACT]||[]).map(x=>x.id));
- const opc=F==="openverse"?`<label class="mut" style="font-size:12.5px"><input type="checkbox" id="ovSens"> Inclou resultats marcats com a sensibles</label> `:F==="openi"?`<label class="mut" style="font-size:12.5px">Tipus d'imatge <select id="oiTipus"><option value="ph">Fotografies clíniques</option><option value="mc">Microscòpia (histologia)</option><option value="">Totes</option></select></label> `:"";
+ const opc=F==="openverse"?`<label class="mut" style="font-size:12.5px"><input type="checkbox" id="ovSens"> Inclou resultats marcats com a sensibles</label> `:F==="epmc"?`<label class="mut" style="font-size:12.5px"><input type="checkbox" id="epCas"> Només casos clínics</label> `:F==="phil"?`<span class="mut" style="font-size:12.5px">Imatges de PHIL publicades a Commons.</span> `:"";
  const lliures=R.r.filter(x=>x.licOk),no=R.r.length-lliures.length;
  el.innerHTML=`<div class="cerca" style="margin-bottom:8px">${opc}<span class="mut" style="font-size:12.5px">${R.carrega?"":`${lliures.length} resultats amb llicència lliure`+(no?` · ${no} amagats per llicència no lliure`:"")+(R.amagats?` · ${R.amagats} de Commons amagats (ja els cerques a la primera pestanya)`:"")}</span></div>`
  +(R.avis?`<div class="avis">${esc(R.avis)}</div>`:"")
- +(R.err?`<div class="avis">No s'ha pogut cercar a ${esc(FONTS[F].n)}: ${esc(R.err)}<br>Pots fer la cerca directament al web i afegir la foto des de la pestanya «PHIL i altres (a mà)». ${linkWeb(F)}</div>`:"")
+ +(R.err?`<div class="avis">No s'ha pogut cercar a ${esc(FONTS[F].n)}: ${esc(R.err)}<br>Pots fer la cerca directament al web i afegir la foto des de la pestanya «Altres webs (a mà)». ${linkWeb(F)}</div>`:"")
  +`<div class="grid">${lliures.map(x=>`<div class="rc${sel.has(x.id)?" tria":""}"><div class="im" data-zoom="${esc(x.img)}"><img loading="lazy" src="${esc(x.mini||x.img)}" alt="">${x.usada?`<span class="usada">Ja és a la guia</span>`:""}</div>
    <div class="bd"><b>${esc(x.titol)}</b><span>${esc(x.autor||"autor desconegut")}</span><span class="lic ${x.verificar?"ver":"ok"}">${esc(x.lic)}</span>${x.amp?`<span class="mut">${x.amp}×${x.alc} px</span>`:""}<div class="ds" title="Clica per veure-ho tot">${esc(x.desc||"(sense descripció)")}</div></div>
    <div class="ac"><button data-id="${esc(x.id)}" class="bTria ${sel.has(x.id)?"":"pri"}"${x.usada?" disabled":""}>${sel.has(x.id)?"Triada ✓":"Tria"}</button><a href="${esc(x.pagina)}" target="_blank" rel="noopener">Obre la font</a></div></div>`).join("")}</div>`
  +(R.carrega?`<div class="carrega">Cercant…</div>`:"")
  +(!R.carrega&&!R.err&&!lliures.length?`<p class="mut">Cap resultat amb llicència lliure. Prova uns altres termes o una altra font. ${linkWeb(F)}</p>`:"")
  +(R.mes&&!R.carrega?`<p><button id="bMes">Més resultats</button></p>`:"");
- const s=$("#oiTipus");if(s){s.value=S.oiTipus??"ph";s.onchange=()=>{S.oiTipus=s.value;desa();RES.openi=null;cerca();};}
+ const ec=$("#epCas");if(ec){ec.checked=S.epmcCas!==false;ec.onchange=()=>{S.epmcCas=ec.checked;desa();RES.epmc=null;PAG=0;cerca();};}
  const ov=$("#ovSens");if(ov){ov.checked=!!S.ovSens;ov.onchange=()=>{S.ovSens=ov.checked;desa();RES.openverse=null;cerca();};}
  const bm=$("#bMes");if(bm)bm.onclick=()=>{PAG++;cerca(true);};
  el.querySelectorAll(".ds").forEach(d=>d.onclick=()=>d.classList.toggle("obert"));
  el.querySelectorAll(".bTria").forEach(b=>b.onclick=()=>{const x=lliures.find(y=>y.id===b.dataset.id);tria(x);});}
 
 function linkWeb(f){const q=encodeURIComponent($("#q")?$("#q").value:"");
- const L={commons:`https://commons.wikimedia.org/w/index.php?search=${q}&title=Special:MediaSearch&type=image`,openverse:`https://openverse.org/search/image?q=${q}&license=by,by-sa,cc0,pdm`,openi:`https://openi.nlm.nih.gov/gridquery?q=${q}&coll=pmc`};
+ const L={commons:`https://commons.wikimedia.org/w/index.php?search=${q}&title=Special:MediaSearch&type=image`,openverse:`https://openverse.org/search/image?q=${q}&license=by,by-sa,cc0,pdm`,phil:`https://www.google.com/search?q=site%3Aphil.cdc.gov+${q}`,epmc:`https://europepmc.org/search?query=${q}%20AND%20OPEN_ACCESS%3Ay`};
  return L[f]?`<a href="${L[f]}" target="_blank" rel="noopener">Obre la cerca al web ↗</a>`:"";}
 
 function tria(x){const k=ACT;const L=S.sel[k]||(S.sel[k]=[]);const i=L.findIndex(y=>y.id===x.id);
@@ -327,7 +342,7 @@ async function exporta(){if(typeof JSZip==="undefined"){toast("No s'ha pogut car
  b0.textContent="Comprimint…";
  const blob=await zip.generateAsync({type:"blob"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="fotos-mapa-pell-"+new Date().toISOString().slice(0,10)+".zip";document.body.appendChild(a);a.click();a.remove();
  b0.disabled=false;b0.textContent="Exporta el zip";
- if(falten.length)alert("Zip generat, però no s'han pogut baixar "+falten.length+" imatges (el navegador no les deixa baixar des d'aquesta pàgina):\n\n• "+falten.join("\n• ")+"\n\nSón al manifest amb l'enllaç. Si vols, desa-les des de la font i afegeix-les a la pestanya «PHIL i altres (a mà)».");
+ if(falten.length)alert("Zip generat, però no s'han pogut baixar "+falten.length+" imatges (el navegador no les deixa baixar des d'aquesta pàgina):\n\n• "+falten.join("\n• ")+"\n\nSón al manifest amb l'enllaç. Si vols, desa-les des de la font i afegeix-les a la pestanya «Altres webs (a mà)».");
  else toast("Zip generat amb "+items.length+" fotos.");}
 $("#bExporta").onclick=exporta;
 
@@ -348,14 +363,14 @@ $("#fImporta").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{let
 const AJUDA=`<h2>Com funciona</h2>
 <ol>
 <li>Tria a l'esquerra un objectiu. «Forma»: la forma encara no té cap foto. «Part»: una localització, un estadi o un signe que la foto actual no mostra. «Glossari»: un signe o terme que surt en més d'una fitxa; la foto anirà al desplegable del glossari, no a la galeria d'una fitxa.</li>
-<li>Cerca a <b>Wikimedia Commons</b>, <b>Openverse</b> (Flickr i altres arxius) o <b>Open-i</b> (figures d'articles de PubMed Central). Només es mostren fotos amb llicència CC BY, CC BY-SA, CC0 o de domini públic. Les fotos de Commons que ja són a la guia surten marcades i no es poden triar.</li>
+<li>Cerca a <b>Wikimedia Commons</b>, <b>CDC PHIL</b> (les imatges de PHIL que són a Commons), <b>Articles (Europe PMC)</b> (figures d'articles d'accés obert amb llicència CC BY, CC BY-SA o CC0) o <b>Openverse</b> (Flickr i altres arxius). Només es mostren fotos amb llicència CC BY, CC BY-SA, CC0 o de domini públic. Les fotos de Commons que ja són a la guia surten marcades i no es poden triar.</li>
 <li>Llegeix la descripció original per comprovar que la foto és de debò d'aquella forma. Pots triar-ne més d'una per objectiu si mostren coses diferents.</li>
 <li>Si la persona és identificable, deixa marcat «Surt la cara»: taparé els ulls o retallaré.</li>
-<li>Per a <b>CDC PHIL</b> o altres webs, desa la imatge i afegeix-la a la pestanya «PHIL i altres (a mà)» amb l'adreça de la pàgina.</li>
+<li>Per a imatges que no surtin a cap pestanya (el web de PHIL, Open-i…), desa la imatge i afegeix-la a la pestanya «Altres webs (a mà)» amb l'adreça de la pàgina.</li>
 <li>Si mires un objectiu i no hi ha res adequat, marca «No hi ha cap foto bona».</li>
 <li>Quan acabis, <b>Exporta el zip</b> i envia-me'l. La selecció es desa al navegador: pots plegar i continuar un altre dia (o recuperar-la amb «Importa» des del zip).</li>
 </ol>
-<p class="mut">Abans d'incorporar res comprovaré la llicència i l'autor de cada foto (sobretot les d'Openverse, Open-i i les afegides a mà), que correspon a la forma i que no està repetida a la guia.</p>
+<p class="mut">Abans d'incorporar res comprovaré la llicència i l'autor de cada foto (sobretot les d'Openverse, d'Europe PMC i les afegides a mà), que correspon a la forma i que no està repetida a la guia.</p>
 <p><button id="bNova">+ Proposa una part nova</button></p>`;
 $("#bAjuda").onclick=()=>{ACT=null;renderLlista();renderPanell();bindAjuda();};
 function bindAjuda(){const b=$("#bNova");if(b)b.onclick=partNova;}
