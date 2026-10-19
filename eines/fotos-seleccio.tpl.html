@@ -34,6 +34,7 @@ main{display:grid;grid-template-columns:330px 1fr;min-height:calc(100vh - 56px)}
 .ob .t{flex:1}
 .pill{font-size:11px;border-radius:9px;padding:0 6px;white-space:nowrap;border:1px solid var(--ln);color:var(--mut)}
 .pill.F{border-color:var(--acc);color:var(--acc)}
+.pill.G{border-color:var(--ok);color:var(--ok)}
 .pill.n{background:var(--okb);color:var(--ok);border-color:transparent}
 .pill.cap{background:var(--sf2)}
 #panell{padding:16px 20px 60px;min-width:0}
@@ -97,6 +98,7 @@ details summary{cursor:pointer;color:var(--acc)}
    <input type="search" id="fText" placeholder="Filtra per fitxa o forma…">
    <label><input type="checkbox" id="fF" checked> Formes sense foto</label>
    <label><input type="checkbox" id="fP" checked> Parts importants</label>
+   <label><input type="checkbox" id="fG" checked> Termes del glossari</label>
    <label><input type="checkbox" id="fPend"> Només les pendents</label>
   </div>
   <div id="obs"></div>
@@ -179,14 +181,14 @@ let F="commons",RES={},PAG=0,ACT=null;
 /* ---------- Llista d'objectius ---------- */
 function compta(){const os=OBS();const amb=os.filter(o=>(S.sel[kOb(o)]||[]).length).length,cap=os.filter(o=>S.cap[kOb(o)]&&!(S.sel[kOb(o)]||[]).length).length,n=os.reduce((a,o)=>a+(S.sel[kOb(o)]||[]).length,0);
  $("#prog").textContent=`${n} fotos triades · ${amb} de ${os.length} objectius amb foto · ${cap} sense res bo`;}
-function renderLlista(){const ft=$("#fText").value.trim().toLowerCase(),fF=$("#fF").checked,fP=$("#fP").checked,fPend=$("#fPend").checked;
- let h="";for(const g of GRUPS){let hg="";for(const id of g.ids){const os=OBS().filter(o=>o.f===id&&((o.t==="F"&&fF)||(o.t!=="F"&&fP))&&(!fPend||(!(S.sel[kOb(o)]||[]).length&&!S.cap[kOb(o)]))&&(!ft||(FX[id].n+" "+o.p).toLowerCase().includes(ft)));
-   if(!os.length)continue;hg+=`<div class="fx">${esc(FX[id].n)}</div>`+os.map(o=>{const k=kOb(o),n=(S.sel[k]||[]).length;
-    return `<div class="ob${ACT===k?" on":""}" data-k="${esc(k)}"><span class="t">${esc(o.p)}</span>${n?`<span class="pill n">${n}</span>`:S.cap[k]?`<span class="pill cap">cap</span>`:""}<span class="pill ${o.t==="F"?"F":""}">${o.t==="F"?"forma":o.t==="N"?"nova":"part"}</span></div>`;}).join("");}
+function renderLlista(){const ft=$("#fText").value.trim().toLowerCase(),fF=$("#fF").checked,fP=$("#fP").checked,fG=$("#fG").checked,fPend=$("#fPend").checked;
+ let h="";for(const g of GRUPS){let hg="";for(const id of g.ids){const os=OBS().filter(o=>o.f===id&&((o.t==="F"&&fF)||(o.t==="G"&&fG)||((o.t==="P"||o.t==="N")&&fP))&&(!fPend||(!(S.sel[kOb(o)]||[]).length&&!S.cap[kOb(o)]))&&(!ft||(FX[id].n+" "+o.p).toLowerCase().includes(ft)));
+   if(!os.length)continue;hg+=(FX[id].glos?"":`<div class="fx">${esc(FX[id].n)}</div>`)+os.map(o=>{const k=kOb(o),n=(S.sel[k]||[]).length;
+    return `<div class="ob${ACT===k?" on":""}" data-k="${esc(k)}"><span class="t">${esc(o.p)}</span>${n?`<span class="pill n">${n}</span>`:S.cap[k]?`<span class="pill cap">cap</span>`:""}<span class="pill ${o.t==="F"?"F":o.t==="G"?"G":""}">${o.t==="F"?"forma":o.t==="N"?"nova":o.t==="G"?"glossari":"part"}</span></div>`;}).join("");}
   if(hg)h+=`<div class="grp">${esc(g.n)}</div>`+hg;}
  $("#obs").innerHTML=h||`<p class="mut" style="padding:12px">Cap objectiu amb aquests filtres.</p>`;compta();}
 $("#obs").addEventListener("click",e=>{const d=e.target.closest(".ob");if(d)obre(d.dataset.k);});
-["#fText","#fF","#fP","#fPend"].forEach(s=>$(s).addEventListener("input",renderLlista));
+["#fText","#fF","#fP","#fG","#fPend"].forEach(s=>$(s).addEventListener("input",renderLlista));
 
 /* ---------- Panell ---------- */
 function obre(k){ACT=k;RES={};PAG=0;if(F==="manual")F="commons";renderLlista();renderPanell();if(F!=="manual")cerca();window.scrollTo({top:0});}
@@ -194,9 +196,9 @@ function obAct(){return OBS().find(o=>kOb(o)===ACT);}
 function renderPanell(){const o=obAct();if(!o){$("#panell").innerHTML=AJUDA;return;}
  const fx=FX[o.f],k=kOb(o),q=S.q[k]||o.q;
  $("#panell").innerHTML=`
- <div class="cap1"><h2>${esc(o.p)}</h2><span class="mut">${esc(fx.n)}${fx.agr?" · agrupació":""} · ${o.t==="F"?"forma sense foto":o.t==="N"?"part proposada per tu":"part important"}</span></div>
+ <div class="cap1"><h2>${esc(o.p)}</h2><span class="mut">${fx.glos?`terme del glossari${fx.nou?" (nou)":""} · la foto anirà al desplegable del terme`:esc(fx.n)+(fx.agr?" · agrupació":"")+" · "+(o.t==="F"?"forma sense foto":o.t==="N"?"part proposada per tu":"part important")}</span></div>
  <div class="caixa"><b>Què s'ha de veure:</b> ${esc(o.v||"—")}${o.c?`<div class="avis">Pot sortir la cara: tria fotos on es puguin tapar els ulls o retallar sense identificar la persona.</div>`:""}
-  ${fx.fotos.length?`<details style="margin-top:6px"><summary>Fotos que ja té la fitxa (${fx.fotos.length})</summary><div class="ja">${fx.fotos.map(x=>`<figure><img loading="lazy" src="${esc(REPO_IMG+x.f)}" alt=""><figcaption>${esc(x.peu||"(sense peu)")}</figcaption></figure>`).join("")}</div></details>`:`<div class="mut" style="margin-top:4px">La fitxa encara no té cap foto.</div>`}</div>
+  ${fx.glos?`<div class="mut" style="margin-top:4px">Surt a: ${esc(fx.apareix.join(" · "))}. La foto ha de servir per a totes aquestes fitxes i no ha de repetir cap foto de les seves galeries.</div>`:fx.fotos.length?`<details style="margin-top:6px"><summary>Fotos que ja té la fitxa (${fx.fotos.length})</summary><div class="ja">${fx.fotos.map(x=>`<figure><img loading="lazy" src="${esc(REPO_IMG+x.f)}" alt=""><figcaption>${esc(x.peu||"(sense peu)")}</figcaption></figure>`).join("")}</div></details>`:`<div class="mut" style="margin-top:4px">La fitxa encara no té cap foto.</div>`}</div>
  <div class="caixa" id="triades"></div>
  <div class="cerca"><input type="search" id="q" value="${esc(q)}" aria-label="Termes de cerca"><button class="pri" id="bCerca">Cerca</button><button id="bCap" title="Marca que has mirat i no hi ha cap foto adequada">${S.cap[k]?"Desmarca «cap foto bona»":"No hi ha cap foto bona"}</button>
   <span class="mut" style="font-size:12px">Cerca en anglès; pots canviar els termes.</span></div>
@@ -294,7 +296,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")$("#lb").click();});
 /* ---------- Part nova ---------- */
 function partNova(){const ids=GRUPS.flatMap(g=>g.ids);
  $("#panell").innerHTML=`<h2>Part nova</h2><p>Per a una forma o malaltia que necessita una foto que no és a la llista (una altra localització, un altre estadi, una mucosa…).</p>
- <div class="form2 caixa"><label for="nF">Fitxa</label><select id="nF">${GRUPS.map(g=>`<optgroup label="${esc(g.n)}">${g.ids.map(i=>`<option value="${i}">${esc(FX[i].n)}</option>`).join("")}</optgroup>`).join("")}</select>
+ <div class="form2 caixa"><label for="nF">Fitxa</label><select id="nF">${GRUPS.filter(g=>g.g!=="glos").map(g=>`<optgroup label="${esc(g.n)}">${g.ids.map(i=>`<option value="${i}">${esc(FX[i].n)}</option>`).join("")}</optgroup>`).join("")}</select>
  <label for="nP">Forma o part</label><input id="nP" placeholder="p. ex. «Psoriasi: plaques als colzes»">
  <label for="nV">Què s'ha de veure</label><input id="nV">
  <label for="nQ">Termes de cerca (anglès)</label><input id="nQ" placeholder="p. ex. psoriasis elbow plaque">
@@ -316,9 +318,9 @@ async function exporta(){if(typeof JSZip==="undefined"){toast("No s'ha pogut car
  if(!items.length&&!cap.length){toast("Encara no has triat cap foto.");return;}
  const zip=new JSZip(),man=[],falten=[];let n=0;const b0=$("#bExporta");b0.disabled=true;
  for(const [o,it] of items){n++;b0.textContent=`Baixant ${n}/${items.length}…`;
-  const nom=`${o.f}__${slug(o.p)}__${String(n).padStart(3,"0")}`;let fitxer=null,error=null;
+  const nom=`${o.f.replace("glos:","glossari-")}__${slug(o.p)}__${String(n).padStart(3,"0")}`;let fitxer=null,error=null;
   try{const b=await baixa(it);fitxer=nom+ext(b);zip.file("fotos/"+fitxer,b);}catch(e){error=String(e.message||e);falten.push(o.p+": "+it.titol);}
-  man.push({fitxa:o.f,fitxa_nom:FX[o.f].n,part:o.p,tipus:o.t==="F"?"forma sense foto":o.t==="N"?"part nova":"part important",que_sha_de_veure:o.v||"",
+  const fx=FX[o.f];man.push({desti:fx.glos?"glossari":"fitxa",glossari:fx.glos||null,glossari_nou:!!fx.nou,fitxa:fx.glos?null:o.f,fitxa_nom:fx.glos?null:fx.n,surt_a:fx.glos?fx.apareix:null,part:o.p,tipus:o.t==="F"?"forma sense foto":o.t==="N"?"part nova":o.t==="G"?"terme del glossari":"part important",que_sha_de_veure:o.v||"",
    font:it.font,titol:it.titol,pagina:it.pagina,imatge_url:it.local?null:it.img,autor:it.autor,llicencia:it.lic,llicencia_url:it.licUrl||"",per_verificar:!!it.verificar,
    descripcio_original:it.desc||"",cara:!!it.cara,nota:it.nota||"",fitxer,error,mida:it.amp?[it.amp,it.alc]:null});}
  zip.file("manifest.json",JSON.stringify({versio:1,data:new Date().toISOString(),fotos:man,sense_foto_bona:cap,parts_noves:S.custom},null,1));
@@ -334,7 +336,7 @@ $("#bImporta").onclick=()=>$("#fImporta").click();
 $("#fImporta").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{let m,zip=null;
  if(/\.zip$/i.test(f.name)){zip=await JSZip.loadAsync(f);m=JSON.parse(await zip.file("manifest.json").async("string"));}else m=JSON.parse(await f.text());
  if(m.parts_noves)for(const o of m.parts_noves)if(!S.custom.some(x=>kOb(x)===kOb(o)))S.custom.push(o);
- let n=0;for(const x of m.fotos||[]){const k=x.fitxa+"|"+x.part;const L=S.sel[k]||(S.sel[k]=[]);
+ let n=0;for(const x of m.fotos||[]){const k=(x.desti==="glossari"?"glos:"+x.glossari:x.fitxa)+"|"+x.part;const L=S.sel[k]||(S.sel[k]=[]);
   const id=(x.imatge_url?"u:"+x.imatge_url:"m:"+x.fitxer);if(L.some(y=>y.id===id||(y.pagina===x.pagina&&y.titol===x.titol)))continue;
   const it={font:x.font,id,titol:x.titol,pagina:x.pagina,img:x.imatge_url,mini:x.imatge_url,autor:x.autor,lic:x.llicencia,licUrl:x.llicencia_url,licOk:true,verificar:x.per_verificar,desc:x.descripcio_original,cara:x.cara,nota:x.nota};
   if(!x.imatge_url&&zip&&x.fitxer){const b=await zip.file("fotos/"+x.fitxer).async("blob");it.local=true;BL[id]=b;idbPut(id,b);}
@@ -345,7 +347,7 @@ $("#fImporta").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{let
 /* ---------- Ajuda ---------- */
 const AJUDA=`<h2>Com funciona</h2>
 <ol>
-<li>Tria a l'esquerra una forma o una part. «Forma» vol dir que la forma encara no té cap foto; «part» és una localització, un estadi o un signe important que la foto actual no mostra.</li>
+<li>Tria a l'esquerra un objectiu. «Forma»: la forma encara no té cap foto. «Part»: una localització, un estadi o un signe que la foto actual no mostra. «Glossari»: un signe o terme que surt en més d'una fitxa; la foto anirà al desplegable del glossari, no a la galeria d'una fitxa.</li>
 <li>Cerca a <b>Wikimedia Commons</b>, <b>Openverse</b> (Flickr i altres arxius) o <b>Open-i</b> (figures d'articles de PubMed Central). Només es mostren fotos amb llicència CC BY, CC BY-SA, CC0 o de domini públic. Les fotos de Commons que ja són a la guia surten marcades i no es poden triar.</li>
 <li>Llegeix la descripció original per comprovar que la foto és de debò d'aquella forma. Pots triar-ne més d'una per objectiu si mostren coses diferents.</li>
 <li>Si la persona és identificable, deixa marcat «Surt la cara»: taparé els ulls o retallaré.</li>
