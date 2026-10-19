@@ -4,8 +4,11 @@
 (function rv(){
 "use strict";
 if(/claude|anthropic/i.test(location.hostname))return;
-const VERSIO="2026-10-19b";
+const VERSIO="2026-10-19c";
 const PONT_DEF="https://script.google.com/macros/s/AKfycbxt9n1CRTAoJkLrSAcvQjlb9X34DmJHaUyEnwhny1TkLZreDD1-Vr2_-2-xUzF-Lk8Fag/exec";
+/* Noms (empremta) amb aplicació directa a l'arxiu, sense vots; només amb el codi d'administració desat. */
+const hN=s=>{let x=5381;for(const c of String(s).trim().toLowerCase())x=((x*33)^c.codePointAt(0))>>>0;return x.toString(36);};
+const DIRECTES=["375cnl"];
 const LSG=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
 const LSS=(k,v)=>{try{if(v==null||v==="")localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}};
 const PONT=LSG("mp-rv-pont")||PONT_DEF;
@@ -553,8 +556,8 @@ function renderNav(){const n=document.querySelector("nav.top .rv-n");if(n){const
 /* ---------- arxiu per a Claude ---------- */
 function genExport(){if(!DATA)return;const today=new Date().toISOString().slice(0,10);
   const open=PR().filter(p=>!CANV[p.id]||estat(p)==="reoberta");
-  const B={favor:[],discutida:[],contra:[],pocs:[],dubte:[],decisio:[],reob:[]};
-  open.forEach(p=>{if(estat(p)==="reoberta")B.reob.push(p);else if(p.tipus==="dubte")B.dubte.push(p);else if(p.ambit==="organitzacio"||p.ambit==="web"||p.lloc==="nova")B.decisio.push(p);else B[consens(p)].push(p);});
+  const B={directa:[],favor:[],discutida:[],contra:[],pocs:[],dubte:[],decisio:[],reob:[]};
+  open.forEach(p=>{if(estat(p)==="reoberta")B.reob.push(p);else if(p.tipus==="dubte")B.dubte.push(p);else if(ME.admin&&DIRECTES.includes(hN(p.autor)))B.directa.push(p);else if(p.ambit==="organitzacio"||p.ambit==="web"||p.lloc==="nova")B.decisio.push(p);else B[consens(p)].push(p);});
   const fmt=p=>{const A=anc(p),c=recompte(p.id),vs=votsDe(p.id).filter(v=>v.motiu),rs=respDe(p.id);const L=[];
     L.push(`### ${p.id} · ${tipOf(p)} · ${llocLabel(p.lloc)}${A.ap&&!p.lloc.startsWith("s:")?" › "+A.ap:""}`);
     L.push(`- Lloc (clau): \`${p.lloc}\`${A.img?` · imatge \`${A.img}\` · punt x=${A.x}% y=${A.y}%`:""}`);
@@ -570,7 +573,8 @@ function genExport(){if(!DATA)return;const today=new Date().toISOString().slice(
     rs.forEach(r=>L.push(`- Comentari de ${r.autor} (${String(r.data).slice(0,10)}): ${String(r.text).replace(/^\[REOBERTA\]\s*/,"[No hi està d'acord] ")}`));
     if(orphan.has(p.id))L.push(`- Nota: el fragment no s'ha trobat a la versió publicada de la guia.`);
     return L.join("\n");};
-  const S=[["1. Consens a favor","Aplica-les si la verificació amb fonts ho confirma. Si una dada no es pot verificar o és incorrecta, no l'apliquis i explica el motiu a CANVIS.",B.favor],
+  const S=[["0. Aplicació directa (decisió de la Mireia)","No necessiten vots. Aplica-les si la verificació amb fonts ho confirma; si una dada és incorrecta, adapta-la o explica el motiu a CANVIS. També les d'organització, la web i contingut nou sense lloc: tria la ubicació més adequada i justifica-la a CANVIS; pregunta-li només si el canvi és gran (fitxa nova o reorganització de grups).",B.directa],
+    ["1. Consens a favor","Aplica-les si la verificació amb fonts ho confirma. Si una dada no es pot verificar o és incorrecta, no l'apliquis i explica el motiu a CANVIS.",B.favor],
     ["2. Discutides","No les apliquis. Resumeix els arguments de cada part i fes una recomanació perquè decideixi la Mireia.",B.discutida],
     ["3. Consens en contra","Tanca-les com a «rebutjada» a CANVIS, amb el motiu principal del grup.",B.contra],
     ["4. Sense prou vots (menys de 2)","Deixa-les obertes, excepte els errors objectius que puguis verificar amb fonts: aquests corregeix-los.",B.pocs],
