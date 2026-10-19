@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tria de fotos</title>
+<style>
+:root{--bg:#f6f4ef;--sf:#fff;--sf2:#efece5;--ink:#1f1d1a;--mut:#6b665d;--ln:#ddd8cd;--acc:#8a3b2e;--acc2:#f3e3df;--ok:#2f6b3a;--okb:#e2efe2;--warn:#8a5a00;--warnb:#f8ecd2;--bad:#9b1c1c;--badb:#f7dede}
+@media (prefers-color-scheme:dark){:root{--bg:#171614;--sf:#211f1c;--sf2:#2a2824;--ink:#ece8e1;--mut:#a39d92;--ln:#3a3731;--acc:#e09a8a;--acc2:#3a2723;--ok:#8fcf98;--okb:#1f3323;--warn:#e6b85c;--warnb:#3a2f17;--bad:#f09999;--badb:#3d1f1f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--ln);background:var(--sf);border-radius:6px;padding:5px 10px}
+button:hover{border-color:var(--acc)}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+@media (prefers-color-scheme:dark){button.pri{color:#1a1310}}
+button:disabled{opacity:.45;cursor:default}
+input,select,textarea{background:var(--sf);border:1px solid var(--ln);border-radius:6px;padding:5px 8px}
+a{color:var(--acc)}
+header{position:sticky;top:0;z-index:5;background:var(--sf);border-bottom:1px solid var(--ln);padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+header h1{font-size:17px;margin:0 8px 0 0}
+#prog{color:var(--mut)}
+.sp{flex:1}
+main{display:grid;grid-template-columns:330px 1fr;min-height:calc(100vh - 56px)}
+@media (max-width:820px){main{grid-template-columns:1fr}#llista{max-height:40vh;position:static;border-right:none;border-bottom:1px solid var(--ln)}header{position:static}}
+#llista{border-right:1px solid var(--ln);overflow:auto;max-height:calc(100vh - 56px);position:sticky;top:56px;background:var(--sf)}
+#filtres{padding:10px;display:grid;gap:6px;border-bottom:1px solid var(--ln)}
+#filtres label{display:flex;gap:6px;align-items:center;color:var(--mut)}
+.grp{font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);padding:10px 12px 4px}
+.fx{padding:4px 12px 2px;font-weight:600}
+.ob{display:flex;gap:8px;align-items:flex-start;padding:5px 12px 5px 22px;cursor:pointer;border-left:3px solid transparent}
+.ob:hover{background:var(--sf2)}
+.ob.on{background:var(--acc2);border-left-color:var(--acc)}
+.ob .t{flex:1}
+.pill{font-size:11px;border-radius:9px;padding:0 6px;white-space:nowrap;border:1px solid var(--ln);color:var(--mut)}
+.pill.F{border-color:var(--acc);color:var(--acc)}
+.pill.n{background:var(--okb);color:var(--ok);border-color:transparent}
+.pill.cap{background:var(--sf2)}
+#panell{padding:16px 20px 60px;min-width:0}
+.cap1{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}
+.cap1 h2{margin:0;font-size:20px}
+.mut{color:var(--mut)}
+.caixa{background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:10px 12px;margin:10px 0}
+.avis{background:var(--warnb);color:var(--warn);border-radius:6px;padding:6px 10px;margin:8px 0}
+.ja{display:flex;gap:8px;overflow-x:auto;padding:4px 0}
+.ja figure{margin:0;width:110px;flex:none;font-size:11px;color:var(--mut)}
+.ja img{width:110px;height:80px;object-fit:cover;border-radius:4px;background:var(--sf2);display:block}
+.cerca{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cerca input[type=search]{flex:1;min-width:220px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:10px 0 0}
+.tabs button{border-radius:6px 6px 0 0;border-bottom:none}
+.tabs button.on{background:var(--acc2);border-color:var(--acc)}
+#res{border-top:1px solid var(--ln);padding-top:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.rc{background:var(--sf);border:1px solid var(--ln);border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
+.rc.tria{outline:3px solid var(--ok)}
+.rc .im{position:relative;background:var(--sf2);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;cursor:zoom-in}
+.rc .im img{max-width:100%;max-height:100%;object-fit:contain}
+.rc .bd{padding:7px 9px;display:grid;gap:4px;font-size:12.5px;flex:1}
+.rc .ds{color:var(--mut);max-height:4.5em;overflow:hidden}
+.rc .ds.obert{max-height:none}
+.rc .ac{display:flex;gap:6px;padding:0 9px 9px;flex-wrap:wrap}
+.lic{font-size:11px;font-weight:600;border-radius:4px;padding:1px 6px;justify-self:start}
+.lic.ok{background:var(--okb);color:var(--ok)}
+.lic.ver{background:var(--warnb);color:var(--warn)}
+.lic.no{background:var(--badb);color:var(--bad)}
+.usada{position:absolute;inset:auto 6px 6px auto;background:var(--badb);color:var(--bad);font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px}
+#triades .it{display:grid;grid-template-columns:120px 1fr auto;gap:10px;align-items:start;border-top:1px solid var(--ln);padding:8px 0}
+#triades .it:first-child{border-top:none}
+#triades img{width:120px;height:90px;object-fit:cover;border-radius:4px;background:var(--sf2)}
+#triades .it textarea{width:100%;min-height:36px}
+.drop{border:2px dashed var(--ln);border-radius:8px;padding:12px;text-align:center;color:var(--mut)}
+.drop.sobre{border-color:var(--acc);background:var(--acc2)}
+.form2{display:grid;grid-template-columns:150px 1fr;gap:6px 10px;align-items:center}
+.form2 input,.form2 select,.form2 textarea{width:100%}
+@media (max-width:600px){.form2{grid-template-columns:1fr}}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:20;cursor:zoom-out}
+#lb img{max-width:95vw;max-height:92vh}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;display:none;z-index:30;max-width:90vw}
+details summary{cursor:pointer;color:var(--acc)}
+.carrega{color:var(--mut);padding:12px 0}
+</style>
+</head>
+<body>
+<header>
+ <h1>Tria de fotos · Mapa de la pell</h1>
+ <span id="prog"></span>
+ <span class="sp"></span>
+ <button id="bAjuda">Com funciona?</button>
+ <button id="bImporta" title="Recupera una selecció exportada abans">Importa</button>
+ <button id="bExporta" class="pri">Exporta el zip</button>
+ <input type="file" id="fImporta" accept=".zip,.json" hidden>
+</header>
+<main>
+ <nav id="llista">
+  <div id="filtres">
+   <input type="search" id="fText" placeholder="Filtra per fitxa o forma…">
+   <label><input type="checkbox" id="fF" checked> Formes sense foto</label>
+   <label><input type="checkbox" id="fP" checked> Parts importants</label>
+   <label><input type="checkbox" id="fPend"> Només les pendents</label>
+  </div>
+  <div id="obs"></div>
+ </nav>
+ <section id="panell"></section>
+</main>
+<div id="lb"><img alt=""></div>
+<div id="toast" role="status"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+/*DADES*/
+const REPO_IMG="https://raw.githubusercontent.com/blurechunk/mapa-pell/main/img/";
+const CLAU="mp-fotos-seleccio-v1";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const txt=h=>{const d=new DOMParser().parseFromString(String(h??""),"text/html");return (d.body.textContent||"").replace(/\s+/g," ").trim();};
+const slug=s=>String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40);
+function toast(m,ms=3200){const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display="none",ms);}
+
+/* ---------- Estat ---------- */
+let S={sel:{},cap:{},custom:[],q:{}};
+try{const r=localStorage.getItem(CLAU);if(r)S=Object.assign(S,JSON.parse(r));}catch(e){}
+function desa(){try{localStorage.setItem(CLAU,JSON.stringify(S));}catch(e){toast("No s'ha pogut desar al navegador. Exporta el zip abans de tancar la pàgina.");}}
+const OBS=()=>[...OBJ,...S.custom];
+const kOb=o=>o.f+"|"+o.p;
+
+/* Fitxers locals (arrossegats): IndexedDB si es pot */
+const BL={};let IDB=null;
+try{const rq=indexedDB.open("mp-fotos",1);rq.onupgradeneeded=()=>rq.result.createObjectStore("b");rq.onsuccess=()=>{IDB=rq.result;carregaBlobs();};}catch(e){}
+function idbPut(k,v){if(!IDB)return;try{IDB.transaction("b","readwrite").objectStore("b").put(v,k);}catch(e){}}
+function idbDel(k){if(!IDB)return;try{IDB.transaction("b","readwrite").objectStore("b").delete(k);}catch(e){}}
+function carregaBlobs(){try{const st=IDB.transaction("b").objectStore("b");const rq=st.openCursor();rq.onsuccess=()=>{const c=rq.result;if(c){BL[c.key]=c.value;c.continue();}else render();};}catch(e){}}
+const vista=it=>it.local&&BL[it.id]?URL.createObjectURL(BL[it.id]):(it.mini||it.img||"");
+
+/* ---------- Llicències ---------- */
+const LLIURES=["CC BY","CC BY-SA","CC0","Domini públic","GFDL"];
+function licCommons(n){const s=(n||"").trim();
+ if(!s)return {ok:false,t:"Sense llicència"};
+ if(/\bNC\b|\bND\b|non-?commercial|no ?deriv|fair use|copyright(ed)?\b|all rights/i.test(s))return {ok:false,t:s};
+ if(/^cc[- ]?zero|^cc0/i.test(s))return {ok:true,t:"CC0"};
+ if(/^(public domain|pd\b|pd-|pdm)/i.test(s))return {ok:true,t:"Domini públic"};
+ if(/^cc[- ]by[- ]sa/i.test(s))return {ok:true,t:s.replace(/^cc[- ]by[- ]sa/i,"CC BY-SA").replace(/-(\d)/,' $1')};
+ if(/^cc[- ]by\b/i.test(s))return {ok:true,t:s.replace(/^cc[- ]by/i,"CC BY").replace(/-(\d)/,' $1')};
+ if(/^gfdl/i.test(s))return {ok:true,t:"GFDL"};
+ return {ok:false,t:s};}
+function licOV(r){const m={by:"CC BY","by-sa":"CC BY-SA",cc0:"CC0",pdm:"Domini públic"};const b=m[r.license];
+ return b?{ok:true,t:b==="CC0"||b==="Domini públic"?b:b+" "+(r.license_version||"")}:{ok:false,t:(r.license||"?").toUpperCase()};}
+
+/* ---------- Fonts ---------- */
+const FONTS={
+ commons:{n:"Wikimedia Commons",async cerca(q,pag){
+   const u="https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=24&gsroffset="+(pag*24)+"&gsrsearch="+encodeURIComponent(q+" filetype:bitmap")+"&prop=imageinfo&iiprop=url|size|extmetadata|mime&iiurlwidth=1280&iiextmetadatafilter=LicenseShortName|Artist|ImageDescription|LicenseUrl|Credit|ObjectName";
+   const j=await (await fetch(u)).json();if(j.error)throw new Error(j.error.info);
+   const ps=Object.values((j.query||{}).pages||{}).sort((a,b)=>a.index-b.index);
+   return {mes:!!j.continue,r:ps.map(p=>{const ii=(p.imageinfo||[])[0]||{},m=ii.extmetadata||{},g=k=>(m[k]||{}).value||"";const L=licCommons(g("LicenseShortName"));
+    const tit=p.title.replace(/^File:/,"");
+    return {font:"commons",id:"c:"+p.pageid,titol:tit,pagina:ii.descriptionurl,img:ii.thumburl||ii.url,mini:ii.thumburl,amp:ii.width,alc:ii.height,
+     autor:txt(g("Artist"))||txt(g("Credit")),lic:L.t,licOk:L.ok,licUrl:g("LicenseUrl"),desc:txt(g("ImageDescription")),usada:USADES.has(tit.replace(/_/g," "))};})};}},
+ openverse:{n:"Openverse",async cerca(q,pag){
+   const u="https://api.openverse.org/v1/images/?q="+encodeURIComponent(q)+"&license=by,by-sa,cc0,pdm&page_size=20&page="+(pag+1)+(S.ovSens?"&mature=true":"");
+   const rs=await fetch(u);if(rs.status===429)throw new Error("Openverse limita les cerques anònimes: espera uns minuts.");
+   const j=await rs.json();if(!rs.ok)throw new Error(j.detail||("HTTP "+rs.status));
+   const r=(j.results||[]).filter(x=>!/wikimedia/i.test(x.source||"")).map(x=>{const L=licOV(x);
+    return {font:"openverse",id:"o:"+x.id,titol:x.title||"(sense títol)",pagina:x.foreign_landing_url,img:x.url,mini:x.thumbnail,ovId:x.id,amp:x.width,alc:x.height,
+     autor:x.creator||"",autorUrl:x.creator_url||"",lic:L.t,licOk:L.ok,licUrl:x.license_url||"",desc:[x.provider?("Font: "+x.provider):"",(x.tags||[]).map(t=>t.name).slice(0,12).join(", ")].filter(Boolean).join(" · "),verificar:true};});
+   return {mes:(j.page_count||1)>pag+1,r,amagats:(j.results||[]).length-r.length};}},
+ openi:{n:"Open-i (articles de PMC)",async cerca(q,pag){
+   const tip=S.oiTipus??"ph";
+   const base="https://openi.nlm.nih.gov/api/search?coll=pmc&query="+encodeURIComponent(q)+"&m="+(pag*24+1)+"&n="+(pag*24+24)+(tip?"&it="+tip:"");
+   let rs=await fetch(base+"&lic=by"),j=await rs.json(),filtre=true;
+   if(!j.list||!j.list.length){rs=await fetch(base);j=await rs.json();filtre=false;}
+   const r=(j.list||[]).map(x=>({font:"openi",id:"i:"+(x.uid||"")+":"+((x.image||{}).id||""),titol:txt(x.title),pagina:(x.pmc_url||"").replace(/^http:/,"https:"),img:"https://openi.nlm.nih.gov"+(x.imgLarge||""),mini:"https://openi.nlm.nih.gov"+(x.imgThumbLarge||x.imgThumb||""),
+     autor:"Autors de l'article · "+(x.journal_title||""),lic:filtre?"Per verificar (filtre CC BY)":"Per verificar",licOk:true,verificar:true,desc:txt((x.image||{}).caption),pmcid:x.uid}));
+   return {mes:(j.total||0)>pag*24+24,r,avis:filtre?"":"El filtre de llicència d'Open-i no ha retornat res; es mostren tots els resultats. Molts articles són NC: comprovaré la llicència de cada foto abans d'incorporar-la."};}},
+ manual:{n:"PHIL i altres (a mà)"}
+};
+const ORDRE=["commons","openverse","openi","manual"];
+let F="commons",RES={},PAG=0,ACT=null;
+
+/* ---------- Llista d'objectius ---------- */
+function compta(){const os=OBS();const amb=os.filter(o=>(S.sel[kOb(o)]||[]).length).length,cap=os.filter(o=>S.cap[kOb(o)]&&!(S.sel[kOb(o)]||[]).length).length,n=os.reduce((a,o)=>a+(S.sel[kOb(o)]||[]).length,0);
+ $("#prog").textContent=`${n} fotos triades · ${amb} de ${os.length} objectius amb foto · ${cap} sense res bo`;}
+function renderLlista(){const ft=$("#fText").value.trim().toLowerCase(),fF=$("#fF").checked,fP=$("#fP").checked,fPend=$("#fPend").checked;
+ let h="";for(const g of GRUPS){let hg="";for(const id of g.ids){const os=OBS().filter(o=>o.f===id&&((o.t==="F"&&fF)||(o.t!=="F"&&fP))&&(!fPend||(!(S.sel[kOb(o)]||[]).length&&!S.cap[kOb(o)]))&&(!ft||(FX[id].n+" "+o.p).toLowerCase().includes(ft)));
+   if(!os.length)continue;hg+=`<div class="fx">${esc(FX[id].n)}</div>`+os.map(o=>{const k=kOb(o),n=(S.sel[k]||[]).length;
+    return `<div class="ob${ACT===k?" on":""}" data-k="${esc(k)}"><span class="t">${esc(o.p)}</span>${n?`<span class="pill n">${n}</span>`:S.cap[k]?`<span class="pill cap">cap</span>`:""}<span class="pill ${o.t==="F"?"F":""}">${o.t==="F"?"forma":o.t==="N"?"nova":"part"}</span></div>`;}).join("");}
+  if(hg)h+=`<div class="grp">${esc(g.n)}</div>`+hg;}
+ $("#obs").innerHTML=h||`<p class="mut" style="padding:12px">Cap objectiu amb aquests filtres.</p>`;compta();}
+$("#obs").addEventListener("click",e=>{const d=e.target.closest(".ob");if(d)obre(d.dataset.k);});
+["#fText","#fF","#fP","#fPend"].forEach(s=>$(s).addEventListener("input",renderLlista));
+
+/* ---------- Panell ---------- */
+function obre(k){ACT=k;RES={};PAG=0;if(F==="manual")F="commons";renderLlista();renderPanell();if(F!=="manual")cerca();window.scrollTo({top:0});}
+function obAct(){return OBS().find(o=>kOb(o)===ACT);}
+function renderPanell(){const o=obAct();if(!o){$("#panell").innerHTML=AJUDA;return;}
+ const fx=FX[o.f],k=kOb(o),q=S.q[k]||o.q;
+ $("#panell").innerHTML=`
+ <div class="cap1"><h2>${esc(o.p)}</h2><span class="mut">${esc(fx.n)}${fx.agr?" · agrupació":""} · ${o.t==="F"?"forma sense foto":o.t==="N"?"part proposada per tu":"part important"}</span></div>
+ <div class="caixa"><b>Què s'ha de veure:</b> ${esc(o.v||"—")}${o.c?`<div class="avis">Pot sortir la cara: tria fotos on es puguin tapar els ulls o retallar sense identificar la persona.</div>`:""}
+  ${fx.fotos.length?`<details style="margin-top:6px"><summary>Fotos que ja té la fitxa (${fx.fotos.length})</summary><div class="ja">${fx.fotos.map(x=>`<figure><img loading="lazy" src="${esc(REPO_IMG+x.f)}" alt=""><figcaption>${esc(x.peu||"(sense peu)")}</figcaption></figure>`).join("")}</div></details>`:`<div class="mut" style="margin-top:4px">La fitxa encara no té cap foto.</div>`}</div>
+ <div class="caixa" id="triades"></div>
+ <div class="cerca"><input type="search" id="q" value="${esc(q)}" aria-label="Termes de cerca"><button class="pri" id="bCerca">Cerca</button><button id="bCap" title="Marca que has mirat i no hi ha cap foto adequada">${S.cap[k]?"Desmarca «cap foto bona»":"No hi ha cap foto bona"}</button>
+  <span class="mut" style="font-size:12px">Cerca en anglès; pots canviar els termes.</span></div>
+ <div class="tabs">${ORDRE.map(f=>`<button data-f="${f}" class="${F===f?"on":""}">${FONTS[f].n}</button>`).join("")}</div>
+ <div id="res"></div>`;
+ renderTriades();renderRes();
+ $("#bCerca").onclick=()=>{S.q[k]=$("#q").value.trim();desa();RES={};PAG=0;cerca();};
+ $("#q").onkeydown=e=>{if(e.key==="Enter")$("#bCerca").click();};
+ $("#bCap").onclick=()=>{if(S.cap[k])delete S.cap[k];else S.cap[k]=1;desa();renderPanell();renderLlista();};
+ document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{F=b.dataset.f;PAG=0;document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b));if(F!=="manual"&&!RES[F])cerca();else renderRes();});}
+
+function renderTriades(){const k=ACT,L=S.sel[k]||[];const el=$("#triades");if(!el)return;
+ if(!L.length){el.innerHTML=`<span class="mut">Encara no has triat cap foto per a aquest objectiu. Pots triar-ne més d'una si mostren coses diferents.</span>`;return;}
+ el.innerHTML=`<b>Triades (${L.length})</b>`+L.map((it,i)=>`<div class="it"><img src="${esc(vista(it))}" alt="" data-zoom="${esc(it.local?"":it.img)}"><div style="display:grid;gap:4px;font-size:12.5px">
+  <div><b>${esc(it.titol)}</b> · <a href="${esc(it.pagina)}" target="_blank" rel="noopener">font</a></div>
+  <div>${esc(it.autor||"autor desconegut")} · <span class="lic ${it.verificar?"ver":"ok"}">${esc(it.lic)}</span>${it.verificar?" <span class='mut'>(la comprovaré)</span>":""}</div>
+  ${it.local&&!BL[it.id]?`<div class="avis">Falta el fitxer: torna'l a arrossegar a «PHIL i altres».</div>`:""}
+  <label><input type="checkbox" data-i="${i}" class="cCara"${it.cara?" checked":""}> Surt la cara (cal tapar els ulls o retallar)</label>
+  <textarea data-i="${i}" class="tNota" placeholder="Nota: què ensenya, quina part retallar…">${esc(it.nota||"")}</textarea></div>
+  <div><button data-i="${i}" class="bTreu">Treu</button></div></div>`).join("");
+ el.querySelectorAll(".cCara").forEach(c=>c.onchange=()=>{L[+c.dataset.i].cara=c.checked;desa();});
+ el.querySelectorAll(".tNota").forEach(t=>t.oninput=()=>{L[+t.dataset.i].nota=t.value;desa();});
+ el.querySelectorAll(".bTreu").forEach(b=>b.onclick=()=>{const it=L.splice(+b.dataset.i,1)[0];if(it.local){delete BL[it.id];idbDel(it.id);}if(!L.length)delete S.sel[k];desa();renderTriades();renderRes();renderLlista();});}
+
+async function cerca(mes){const o=obAct();if(!o||F==="manual")return;const f=F,q=$("#q")?$("#q").value.trim():(S.q[ACT]||o.q);
+ if(!mes){RES[f]={r:[],carrega:true};PAG=0;}else RES[f].carrega=true;renderRes();
+ try{const r=await FONTS[f].cerca(q,PAG);if(F!==f)return;const prev=mes?RES[f].r:[];RES[f]={r:prev.concat(r.r),mes:r.mes,avis:r.avis,amagats:(mes?RES[f].amagats||0:0)+(r.amagats||0)};}
+ catch(e){RES[f]={r:mes?RES[f].r:[],err:e instanceof SyntaxError?"el servei no ha retornat dades (potser és en manteniment)":/fetch|network/i.test(e.message||"")?"el navegador no hi ha pogut connectar":(e.message||String(e))};}
+ renderRes();}
+
+function renderRes(){const el=$("#res");if(!el)return;
+ if(F==="manual"){renderManual(el);return;}
+ const R=RES[F]||{r:[]};const sel=new Set((S.sel[ACT]||[]).map(x=>x.id));
+ const opc=F==="openverse"?`<label class="mut" style="font-size:12.5px"><input type="checkbox" id="ovSens"> Inclou resultats marcats com a sensibles</label> `:F==="openi"?`<label class="mut" style="font-size:12.5px">Tipus d'imatge <select id="oiTipus"><option value="ph">Fotografies clíniques</option><option value="mc">Microscòpia (histologia)</option><option value="">Totes</option></select></label> `:"";
+ const lliures=R.r.filter(x=>x.licOk),no=R.r.length-lliures.length;
+ el.innerHTML=`<div class="cerca" style="margin-bottom:8px">${opc}<span class="mut" style="font-size:12.5px">${R.carrega?"":`${lliures.length} resultats amb llicència lliure`+(no?` · ${no} amagats per llicència no lliure`:"")+(R.amagats?` · ${R.amagats} de Commons amagats (ja els cerques a la primera pestanya)`:"")}</span></div>`
+ +(R.avis?`<div class="avis">${esc(R.avis)}</div>`:"")
+ +(R.err?`<div class="avis">No s'ha pogut cercar a ${esc(FONTS[F].n)}: ${esc(R.err)}<br>Pots fer la cerca directament al web i afegir la foto des de la pestanya «PHIL i altres (a mà)». ${linkWeb(F)}</div>`:"")
+ +`<div class="grid">${lliures.map(x=>`<div class="rc${sel.has(x.id)?" tria":""}"><div class="im" data-zoom="${esc(x.img)}"><img loading="lazy" src="${esc(x.mini||x.img)}" alt="">${x.usada?`<span class="usada">Ja és a la guia</span>`:""}</div>
+   <div class="bd"><b>${esc(x.titol)}</b><span>${esc(x.autor||"autor desconegut")}</span><span class="lic ${x.verificar?"ver":"ok"}">${esc(x.lic)}</span>${x.amp?`<span class="mut">${x.amp}×${x.alc} px</span>`:""}<div class="ds" title="Clica per veure-ho tot">${esc(x.desc||"(sense descripció)")}</div></div>
+   <div class="ac"><button data-id="${esc(x.id)}" class="bTria ${sel.has(x.id)?"":"pri"}"${x.usada?" disabled":""}>${sel.has(x.id)?"Triada ✓":"Tria"}</button><a href="${esc(x.pagina)}" target="_blank" rel="noopener">Obre la font</a></div></div>`).join("")}</div>`
+ +(R.carrega?`<div class="carrega">Cercant…</div>`:"")
+ +(!R.carrega&&!R.err&&!lliures.length?`<p class="mut">Cap resultat amb llicència lliure. Prova uns altres termes o una altra font. ${linkWeb(F)}</p>`:"")
+ +(R.mes&&!R.carrega?`<p><button id="bMes">Més resultats</button></p>`:"");
+ const s=$("#oiTipus");if(s){s.value=S.oiTipus??"ph";s.onchange=()=>{S.oiTipus=s.value;desa();RES.openi=null;cerca();};}
+ const ov=$("#ovSens");if(ov){ov.checked=!!S.ovSens;ov.onchange=()=>{S.ovSens=ov.checked;desa();RES.openverse=null;cerca();};}
+ const bm=$("#bMes");if(bm)bm.onclick=()=>{PAG++;cerca(true);};
+ el.querySelectorAll(".ds").forEach(d=>d.onclick=()=>d.classList.toggle("obert"));
+ el.querySelectorAll(".bTria").forEach(b=>b.onclick=()=>{const x=lliures.find(y=>y.id===b.dataset.id);tria(x);});}
+
+function linkWeb(f){const q=encodeURIComponent($("#q")?$("#q").value:"");
+ const L={commons:`https://commons.wikimedia.org/w/index.php?search=${q}&title=Special:MediaSearch&type=image`,openverse:`https://openverse.org/search/image?q=${q}&license=by,by-sa,cc0,pdm`,openi:`https://openi.nlm.nih.gov/gridquery?q=${q}&coll=pmc`};
+ return L[f]?`<a href="${L[f]}" target="_blank" rel="noopener">Obre la cerca al web ↗</a>`:"";}
+
+function tria(x){const k=ACT;const L=S.sel[k]||(S.sel[k]=[]);const i=L.findIndex(y=>y.id===x.id);
+ if(i>=0){L.splice(i,1);if(!L.length)delete S.sel[k];}
+ else{const o=obAct();L.push(Object.assign({},x,{cara:!!o.c,nota:""}));delete S.cap[k];}
+ desa();renderTriades();renderRes();renderLlista();}
+
+function renderManual(el){const q=encodeURIComponent($("#q")?$("#q").value:"");
+ el.innerHTML=`<p>Per a fonts sense cerca integrada. Busca la foto, comprova que té llicència lliure (CC BY, CC BY-SA, CC0 o domini públic) i afegeix-la aquí. Jo verificaré la llicència i l'autor abans d'incorporar-la.</p>
+ <p>Obre la cerca a:
+  <a target="_blank" rel="noopener" href="https://www.google.com/search?q=site%3Aphil.cdc.gov+${q}">CDC PHIL ↗</a> ·
+  <a target="_blank" rel="noopener" href="https://openi.nlm.nih.gov/gridquery?q=${q}&coll=pmc">Open-i ↗</a> ·
+  <a target="_blank" rel="noopener" href="https://europepmc.org/search?query=${q}%20AND%20(LICENSE%3A%22cc%20by%22%20OR%20LICENSE%3A%22cc0%22)">Europe PMC (articles CC BY) ↗</a> ·
+  <a target="_blank" rel="noopener" href="https://openverse.org/search/image?q=${q}&license=by,by-sa,cc0,pdm">Openverse ↗</a></p>
+ <p class="mut" style="font-size:12.5px">A PHIL, mira el camp «Copyright Restrictions» de cada imatge: només serveixen les que diuen que són de domini públic.</p>
+ <div class="form2 caixa">
+  <label for="mFont">Font</label><select id="mFont"><option>CDC PHIL</option><option>PubMed Central (article)</option><option>Openverse</option><option>Wikimedia Commons</option><option>Una altra</option></select>
+  <label for="mPag">Pàgina de la imatge*</label><input id="mPag" type="url" placeholder="https://… (pàgina on surt la llicència)">
+  <label for="mTit">Títol o figura</label><input id="mTit" placeholder="p. ex. «Figura 2» o el títol de la imatge">
+  <label for="mAut">Autor</label><input id="mAut" placeholder="Fotògraf, autors de l'article o institució">
+  <label for="mLic">Llicència</label><select id="mLic"><option>CC BY</option><option>CC BY-SA</option><option>CC0</option><option>Domini públic</option><option>No ho sé</option></select>
+  <label for="mDesc">Descripció original</label><textarea id="mDesc" placeholder="Enganxa el peu o la descripció de la font"></textarea>
+  <label>Fitxer</label><div class="drop" id="mDrop">Arrossega aquí la imatge desada o <label style="color:var(--acc);cursor:pointer;text-decoration:underline">tria-la<input type="file" id="mFile" accept="image/*" hidden></label><div id="mNom" class="mut"></div></div>
+  <span></span><div><button class="pri" id="mAfegeix">Afegeix a «${esc((obAct()||{}).p||"")}»</button></div>
+ </div>`;
+ let fitx=null;const nom=$("#mNom");
+ const posa=f=>{if(!f||!/^image\//.test(f.type)){toast("Ha de ser una imatge.");return;}fitx=f;nom.textContent=f.name+" · "+Math.round(f.size/1024)+" kB";};
+ $("#mFile").onchange=e=>posa(e.target.files[0]);
+ const d=$("#mDrop");d.ondragover=e=>{e.preventDefault();d.classList.add("sobre");};d.ondragleave=()=>d.classList.remove("sobre");
+ d.ondrop=e=>{e.preventDefault();d.classList.remove("sobre");posa(e.dataTransfer.files[0]);};
+ $("#mAfegeix").onclick=()=>{const pag=$("#mPag").value.trim();if(!/^https?:\/\//.test(pag)){toast("Cal l'adreça de la pàgina de la imatge.");return;}
+  if(!fitx){toast("Cal la imatge: desa-la des de la font i arrossega-la aquí.");return;}
+  const id="m:"+Date.now();BL[id]=fitx;idbPut(id,fitx);
+  const o=obAct();const L=S.sel[ACT]||(S.sel[ACT]=[]);
+  L.push({font:"manual:"+$("#mFont").value,id,titol:$("#mTit").value.trim()||fitx.name,pagina:pag,autor:$("#mAut").value.trim(),lic:$("#mLic").value,licOk:true,verificar:true,desc:$("#mDesc").value.trim(),local:true,nomFitxer:fitx.name,cara:!!o.c,nota:""});
+  delete S.cap[ACT];desa();toast("Afegida.");renderTriades();renderLlista();renderManual(el);};}
+
+/* ---------- Ampliació ---------- */
+document.addEventListener("click",e=>{const z=e.target.closest("[data-zoom]");if(z&&z.dataset.zoom){$("#lb img").src=z.dataset.zoom;$("#lb").style.display="flex";}});
+$("#lb").onclick=()=>{$("#lb").style.display="none";$("#lb img").src="";};
+document.addEventListener("keydown",e=>{if(e.key==="Escape")$("#lb").click();});
+
+/* ---------- Part nova ---------- */
+function partNova(){const ids=GRUPS.flatMap(g=>g.ids);
+ $("#panell").innerHTML=`<h2>Part nova</h2><p>Per a una forma o malaltia que necessita una foto que no és a la llista (una altra localització, un altre estadi, una mucosa…).</p>
+ <div class="form2 caixa"><label for="nF">Fitxa</label><select id="nF">${GRUPS.map(g=>`<optgroup label="${esc(g.n)}">${g.ids.map(i=>`<option value="${i}">${esc(FX[i].n)}</option>`).join("")}</optgroup>`).join("")}</select>
+ <label for="nP">Forma o part</label><input id="nP" placeholder="p. ex. «Psoriasi: plaques als colzes»">
+ <label for="nV">Què s'ha de veure</label><input id="nV">
+ <label for="nQ">Termes de cerca (anglès)</label><input id="nQ" placeholder="p. ex. psoriasis elbow plaque">
+ <span></span><div><button class="pri" id="nOk">Afegeix-la</button></div></div>`;
+ $("#nOk").onclick=()=>{const p=$("#nP").value.trim(),q=$("#nQ").value.trim();if(!p||!q){toast("Cal el nom i els termes de cerca.");return;}
+  const o={f:$("#nF").value,p,t:"N",q,v:$("#nV").value.trim(),c:0};if(OBS().some(x=>kOb(x)===kOb(o))){toast("Ja existeix.");return;}
+  S.custom.push(o);desa();obre(kOb(o));};}
+
+/* ---------- Exportació ---------- */
+async function baixa(it){
+ if(it.local){const b=BL[it.id];if(!b)throw new Error("falta el fitxer local");return b;}
+ const prova=[it.img];if(it.font==="openverse"&&it.ovId)prova.push("https://api.openverse.org/v1/images/"+it.ovId+"/thumb/?full_size=true&compressed=false","https://api.openverse.org/v1/images/"+it.ovId+"/thumb/");
+ let darrer;for(const u of prova){try{const r=await fetch(u,{mode:"cors"});if(!r.ok)throw new Error("HTTP "+r.status);const b=await r.blob();if(!/^image\//.test(b.type)&&b.size<2000)throw new Error("no és una imatge");return b;}catch(e){darrer=e;}}
+ throw darrer||new Error("no s'ha pogut baixar");}
+const ext=b=>({"image/png":".png","image/webp":".webp","image/gif":".gif","image/tiff":".tif"}[b.type]||".jpg");
+async function exporta(){if(typeof JSZip==="undefined"){toast("No s'ha pogut carregar JSZip: cal connexió a Internet.");return;}
+ const items=[];for(const o of OBS()){const L=S.sel[kOb(o)]||[];L.forEach(it=>items.push([o,it]));}
+ const cap=OBS().filter(o=>S.cap[kOb(o)]&&!(S.sel[kOb(o)]||[]).length).map(o=>({fitxa:o.f,part:o.p}));
+ if(!items.length&&!cap.length){toast("Encara no has triat cap foto.");return;}
+ const zip=new JSZip(),man=[],falten=[];let n=0;const b0=$("#bExporta");b0.disabled=true;
+ for(const [o,it] of items){n++;b0.textContent=`Baixant ${n}/${items.length}…`;
+  const nom=`${o.f}__${slug(o.p)}__${String(n).padStart(3,"0")}`;let fitxer=null,error=null;
+  try{const b=await baixa(it);fitxer=nom+ext(b);zip.file("fotos/"+fitxer,b);}catch(e){error=String(e.message||e);falten.push(o.p+": "+it.titol);}
+  man.push({fitxa:o.f,fitxa_nom:FX[o.f].n,part:o.p,tipus:o.t==="F"?"forma sense foto":o.t==="N"?"part nova":"part important",que_sha_de_veure:o.v||"",
+   font:it.font,titol:it.titol,pagina:it.pagina,imatge_url:it.local?null:it.img,autor:it.autor,llicencia:it.lic,llicencia_url:it.licUrl||"",per_verificar:!!it.verificar,
+   descripcio_original:it.desc||"",cara:!!it.cara,nota:it.nota||"",fitxer,error,mida:it.amp?[it.amp,it.alc]:null});}
+ zip.file("manifest.json",JSON.stringify({versio:1,data:new Date().toISOString(),fotos:man,sense_foto_bona:cap,parts_noves:S.custom},null,1));
+ b0.textContent="Comprimint…";
+ const blob=await zip.generateAsync({type:"blob"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="fotos-mapa-pell-"+new Date().toISOString().slice(0,10)+".zip";document.body.appendChild(a);a.click();a.remove();
+ b0.disabled=false;b0.textContent="Exporta el zip";
+ if(falten.length)alert("Zip generat, però no s'han pogut baixar "+falten.length+" imatges (el navegador no les deixa baixar des d'aquesta pàgina):\n\n• "+falten.join("\n• ")+"\n\nSón al manifest amb l'enllaç. Si vols, desa-les des de la font i afegeix-les a la pestanya «PHIL i altres (a mà)».");
+ else toast("Zip generat amb "+items.length+" fotos.");}
+$("#bExporta").onclick=exporta;
+
+/* ---------- Importació (recupera una selecció) ---------- */
+$("#bImporta").onclick=()=>$("#fImporta").click();
+$("#fImporta").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{let m,zip=null;
+ if(/\.zip$/i.test(f.name)){zip=await JSZip.loadAsync(f);m=JSON.parse(await zip.file("manifest.json").async("string"));}else m=JSON.parse(await f.text());
+ if(m.parts_noves)for(const o of m.parts_noves)if(!S.custom.some(x=>kOb(x)===kOb(o)))S.custom.push(o);
+ let n=0;for(const x of m.fotos||[]){const k=x.fitxa+"|"+x.part;const L=S.sel[k]||(S.sel[k]=[]);
+  const id=(x.imatge_url?"u:"+x.imatge_url:"m:"+x.fitxer);if(L.some(y=>y.id===id||(y.pagina===x.pagina&&y.titol===x.titol)))continue;
+  const it={font:x.font,id,titol:x.titol,pagina:x.pagina,img:x.imatge_url,mini:x.imatge_url,autor:x.autor,lic:x.llicencia,licUrl:x.llicencia_url,licOk:true,verificar:x.per_verificar,desc:x.descripcio_original,cara:x.cara,nota:x.nota};
+  if(!x.imatge_url&&zip&&x.fitxer){const b=await zip.file("fotos/"+x.fitxer).async("blob");it.local=true;BL[id]=b;idbPut(id,b);}
+  L.push(it);n++;}
+ for(const c of m.sense_foto_bona||[])S.cap[c.fitxa+"|"+c.part]=1;
+ desa();render();toast(n+" fotos recuperades.");}catch(err){toast("No s'ha pogut llegir: "+err.message);}e.target.value="";};
+
+/* ---------- Ajuda ---------- */
+const AJUDA=`<h2>Com funciona</h2>
+<ol>
+<li>Tria a l'esquerra una forma o una part. «Forma» vol dir que la forma encara no té cap foto; «part» és una localització, un estadi o un signe important que la foto actual no mostra.</li>
+<li>Cerca a <b>Wikimedia Commons</b>, <b>Openverse</b> (Flickr i altres arxius) o <b>Open-i</b> (figures d'articles de PubMed Central). Només es mostren fotos amb llicència CC BY, CC BY-SA, CC0 o de domini públic. Les fotos de Commons que ja són a la guia surten marcades i no es poden triar.</li>
+<li>Llegeix la descripció original per comprovar que la foto és de debò d'aquella forma. Pots triar-ne més d'una per objectiu si mostren coses diferents.</li>
+<li>Si la persona és identificable, deixa marcat «Surt la cara»: taparé els ulls o retallaré.</li>
+<li>Per a <b>CDC PHIL</b> o altres webs, desa la imatge i afegeix-la a la pestanya «PHIL i altres (a mà)» amb l'adreça de la pàgina.</li>
+<li>Si mires un objectiu i no hi ha res adequat, marca «No hi ha cap foto bona».</li>
+<li>Quan acabis, <b>Exporta el zip</b> i envia-me'l. La selecció es desa al navegador: pots plegar i continuar un altre dia (o recuperar-la amb «Importa» des del zip).</li>
+</ol>
+<p class="mut">Abans d'incorporar res comprovaré la llicència i l'autor de cada foto (sobretot les d'Openverse, Open-i i les afegides a mà), que correspon a la forma i que no està repetida a la guia.</p>
+<p><button id="bNova">+ Proposa una part nova</button></p>`;
+$("#bAjuda").onclick=()=>{ACT=null;renderLlista();renderPanell();bindAjuda();};
+function bindAjuda(){const b=$("#bNova");if(b)b.onclick=partNova;}
+function render(){renderLlista();renderPanell();bindAjuda();}
+render();
+</script>
+</body>
+</html>
