@@ -4218,6 +4218,34 @@ nav.top a i.rv-n{font-style:normal;font-family:var(--f-mono);font-size:10.5px;co
 .rv-adm[open] summary{margin-bottom:8px}
 .rv-steps{margin:0;padding-left:1.2em;display:grid;gap:4px;font-size:14.5px;max-width:75ch}
 @media (max-width:560px){.rv-item{grid-template-columns:minmax(0,1fr)}.rv-item .v{justify-self:start}}
+/* botó + i bloc ressaltat */
+.rv-plus.wide{width:auto;height:24px;border-radius:12px;padding:0 10px;font:700 12px/1 var(--f-body);letter-spacing:.01em}
+.rv-hl{position:fixed;z-index:94;pointer-events:none;border:1.5px dashed var(--eosin);border-radius:8px;background:color-mix(in srgb,var(--eosin) 5%,transparent)}
+/* formes proposades a «Tipus i formes» */
+.rv-cor .rv-btn.rv-add{border-color:var(--hema);color:var(--hema);font-weight:700}
+.rv-ty{display:grid;gap:4px;align-content:start;text-align:left;font:inherit;font-size:13.5px;color:var(--ink);padding:12px 14px;border-radius:8px;border:1.5px dashed var(--eosin);background:color-mix(in srgb,var(--eosin) 6%,var(--bg));cursor:pointer}
+.rv-ty:hover{background:color-mix(in srgb,var(--eosin) 12%,var(--bg))}
+.rv-ty .k{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--eosin)}
+.rv-ty b{font-size:15px}
+.rv-ty .m{font-size:12px;color:var(--muted)}
+.rv-ty.rv-fet{border-color:var(--done);background:var(--done-soft)}
+.rv-ty.rv-no{opacity:.6}
+.rv-tyadd{display:grid;gap:4px;place-content:center;text-align:center;min-height:96px;font:inherit;color:var(--hema);padding:12px 14px;border-radius:8px;border:1.5px dashed var(--hema);background:none;cursor:pointer}
+.rv-tyadd b{font-size:14.5px}
+.rv-tyadd span{font-size:12.5px;color:var(--muted)}
+.rv-tyadd:hover{background:var(--hema-soft)}
+/* formulari de forma nova */
+.rv-fs{border:1px solid var(--line);border-radius:8px;padding:8px 10px 10px;margin:0;display:grid;gap:8px}
+.rv-fs legend{font-size:13px;font-weight:700;padding:0 4px}
+.rv-fs legend small{font-weight:400;color:var(--muted)}
+.rv-fm b{display:block;font-size:15px;margin:2px 0 4px}
+.rv-fm dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0;font-size:13.5px}
+.rv-fm dt{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding-top:2px}
+.rv-fm dd{margin:0}
+/* ajuda */
+.rv-help{margin:0;padding:0 0 0 18px;display:grid;gap:8px;font-size:14px}
+.rv-help b{display:block}
+.rv-k{display:inline-block;font-weight:700;color:var(--hema);border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:12.5px}
 </style>
 <script>
 /* ---------- revisió en grup: propostes, votacions i «Corregida» ----------
@@ -4226,7 +4254,7 @@ nav.top a i.rv-n{font-style:normal;font-family:var(--f-mono);font-size:10.5px;co
 (function rv(){
 "use strict";
 if(/claude|anthropic/i.test(location.hostname))return;
-const VERSIO="2026-10-14";
+const VERSIO="2026-10-19";
 const PONT_DEF="https://script.google.com/macros/s/AKfycbxt9n1CRTAoJkLrSAcvQjlb9X34DmJHaUyEnwhny1TkLZreDD1-Vr2_-2-xUzF-Lk8Fag/exec";
 const LSG=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
 const LSS=(k,v)=>{try{if(v==null||v==="")localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}};
@@ -4271,6 +4299,9 @@ const PR=()=>DATA?DATA.propostes:[];
 const votsDe=id=>DATA?DATA.vots.filter(v=>v.proposta===id):[];
 const respDe=id=>DATA?DATA.respostes.filter(v=>v.proposta===id):[];
 const anc=p=>{try{return JSON.parse(p.ancora||"{}")||{};}catch(e){return {};}};
+const isAgr=id=>typeof GAGR!=="undefined"&&GAGR.has(id);
+const formaLab=id=>isAgr(id)?"Malaltia nova a l'agrupació":"Forma o subtipus nou";
+const tipOf=p=>anc(p).forma?formaLab(String(p.lloc||"").slice(2)):(TIP[p.tipus]||p.tipus);
 function estat(p){const c=CANV[p.id];if(!c)return "oberta";
   if(respDe(p.id).some(r=>same(r.autor,p.autor)&&/^\[REOBERTA\]/.test(r.text)&&String(r.data).slice(0,10)>=c.v))return "reoberta";return c.e;}
 const stCls=p=>{const e=estat(p);return e==="rebutjada"?"rv-no":(e==="oberta"||e==="reoberta")?"":"rv-fet";};
@@ -4352,12 +4383,13 @@ function applyRoot(root){
   root.querySelectorAll("[data-rvp]").forEach(m=>{const p=ps.find(x=>x.id===m.dataset.rvp);if(!p||!m.classList.contains(stCls(p)||"rv-st"))unwrap(m);});
   let ix=null;
   ps.forEach(p=>{const A=anc(p);
+    if(A.forma){orphan.delete(p.id);return;}
     if(A.img){const el=findImg(root,A);if(!el){orphan.add(p.id);return;}orphan.delete(p.id);const ex=root.querySelector(`[data-rvp="${p.id}"]`);if(ex&&ex._el===el){posPin(ex);return;}if(ex)ex.remove();mkPin((stCls(p)||"rv-st"),A.x,A.y,p.id,el);return;}
     if(root.querySelector(`[data-rvp="${p.id}"]`)){orphan.delete(p.id);return;}
     if(!ix)ix=index(root);const i=findA(ix,A);if(i<0){orphan.add(p.id);return;}orphan.delete(p.id);
     const cls=stCls(p)||"rv-st";
     if(p.tipus==="afegir"||A.after){const s=document.createElement("span");s.className="rv-ins rv-ui "+cls;s.dataset.rvp=p.id;s.setAttribute("role","button");s.tabIndex=0;s.title="Proposta d'addició";s.textContent="+";insertAt(ix,i+A.t.length,s);}
-    else wrapRange(ix,i,i+A.t.length,()=>{const m=document.createElement("mark");m.className="rv-m "+cls;m.dataset.rvp=p.id;m.title=TIP[p.tipus]||"Proposta";return m;});
+    else wrapRange(ix,i,i+A.t.length,()=>{const m=document.createElement("mark");m.className="rv-m "+cls;m.dataset.rvp=p.id;m.title=tipOf(p);return m;});
     ix=null;});
 }
 function applyMarks(roots){if(applying)return;applying=true;mo.disconnect();
@@ -4393,10 +4425,11 @@ function decorate(){
   const on=!!DATA;
   /* fitxa oberta */
   if(!drawer.hidden&&cur){const t=$1("#dTitle");const host=t&&t.parentElement;
-    if(host){let c=host.querySelector(":scope>.rv-cor");const html=on||MODE?corHTML("f:"+cur,hashFitxa(cur),nProp("f:"+cur)):"";
+    if(host){let c=host.querySelector(":scope>.rv-cor");const html=on||MODE?(MODE?`<button type="button" class="rv-btn rv-add" data-rvforma="${h(cur)}">+ ${h(formaLab(cur))}</button>`:"")+corHTML("f:"+cur,hashFitxa(cur),nProp("f:"+cur)):"";
       if(!html){if(c)c.remove();}else{if(!c){c=document.createElement("div");c.className="rv-cor rv-ui";host.appendChild(c);}if(c.innerHTML!==html)c.innerHTML=html;}}
     const act=drawer.querySelector(".dact");if(act&&!act.querySelector(".rv-dt")){const b=document.createElement("button");b.type="button";b.className="dbtn rv-dt rv-ui";b.dataset.rvmode="1";b.title="Mode corrector (Ctrl+K)";b.innerHTML=`<span class="dbt">Corrector </span>✎`;act.insertBefore(b,act.firstChild);}
-    const dt=drawer.querySelector(".rv-dt");if(dt)dt.setAttribute("aria-pressed",MODE?"true":"false");}
+    const dt=drawer.querySelector(".rv-dt");if(dt)dt.setAttribute("aria-pressed",MODE?"true":"false");
+    decoTyp();}
   /* subapartats de les seccions */
   MAINSECS.forEach(id=>{const root=document.getElementById(id);if(!root)return;
     headsOf(root).forEach(hd=>{const lloc="s:"+id+"|"+sp(hd.textContent);let c=hd.nextElementSibling;if(c&&!c.classList.contains("rv-cor"))c=null;
@@ -4419,15 +4452,65 @@ function decorate(){
     else if(b)b.remove();}
 }
 
+/* formes proposades dins de «Tipus i formes» */
+function rowsOf(id){const t=TYP[id];return t&&!(typeof TL!=="undefined"&&TL[id])?t.r:[];}
+function decoTyp(){const g=drawer.querySelector("#dtyp .typ");if(!g)return;
+  const ps=PR().filter(p=>p.lloc==="f:"+cur&&anc(p).forma);
+  const sig=(MODE?1:0)+"|"+ps.map(p=>p.id+stCls(p)+JSON.stringify(recompte(p.id))).join(",");if(g.dataset.rvsig===sig)return;g.dataset.rvsig=sig;
+  g.querySelectorAll(":scope>.rv-ty,:scope>.rv-tyadd").forEach(x=>x.remove());
+  const tys=[...g.querySelectorAll(":scope>.ty")],rows=rowsOf(cur);
+  ps.forEach(p=>{const F=anc(p).forma,c=recompte(p.id);const e=mk("button","rv-ty rv-ui "+(stCls(p)||"rv-st"));e.type="button";e.dataset.rvp=p.id;
+    const f1=(F.camps||[]).find(x=>x[1]);
+    e.innerHTML=`<span class="k">Proposta · ${h(tipOf(p))}</span><b>${h(F.nom)}</b>${f1?`<span>${h(f1[0])}: ${h(f1[1])}</span>`:""}<span class="m">${h(p.autor)} · ✓ ${c.acord} · ✗ ${c.contra} · – ${c.innecessaria}</span>`;
+    const i=F.despres?rows.findIndex(r=>same(r[0],F.despres)):-1;const ref=i>=0?tys[i]:null;
+    if(ref){let n=ref;while(n.nextElementSibling&&n.nextElementSibling.classList.contains("rv-ty"))n=n.nextElementSibling;n.after(e);}else g.appendChild(e);});
+  if(MODE){const a=mk("button","rv-tyadd rv-ui",`<b>+ ${h(formaLab(cur))}</b><span>${isAgr(cur)?"Proposa una altra malaltia per a aquesta fitxa":"Proposa una forma que falti en aquesta taula"}</span>`);a.type="button";a.dataset.rvforma=cur;g.appendChild(a);}}
+function openForma(id,after,rect){const t=TYP[id],rows=rowsOf(id),agr=isAgr(id);
+  const labs=t&&t.lab?t.lab:(rows.length?["Descripció"]:["Què","Qui","Clínica","Clau"]);
+  draft={kind:"forma",ctx:{lloc:"f:"+id,id,labs}};cardId=null;
+  let opts="";if(rows.length){let grp=null;rows.forEach((r,i)=>{const hd=t.hd&&t.hd[""+i];if(hd){opts+=(grp?"</optgroup>":"")+`<optgroup label="${h(hd)}">`;grp=1;}opts+=`<option value="${i}"${i===after?" selected":""}>Després de «${h(r[0])}»</option>`;});if(grp)opts+="</optgroup>";}
+  const pos=rows.length?`<label>On va<select id="rvFPos"><option value=""${after==null?" selected":""}>Al final de la taula</option>${opts}</select></label>`:`<p class="rv-who">Aquesta fitxa encara no té taula de formes: la proposta servirà per començar-ne una.</p>`;
+  openPop(`${head(agr?"Proposa una malaltia nova per a l'agrupació":"Proposa una forma o subtipus nou",D[id].n+" › "+(agr?"Malalties agrupades":"Tipus i formes"))}
+   <label>${agr?"Nom de la malaltia":"Nom de la forma o subtipus"}<input type="text" id="rvFNom" maxlength="120"></label>${pos}
+   <fieldset class="rv-fs"><legend>Com la descriuries? <small>(omple el que sàpigues)</small></legend>${labs.map((l,i)=>`<label>${h(l)}<input type="text" class="rv-fc" data-i="${i}" maxlength="400"></label>`).join("")}</fieldset>
+   <label>Esquema histològic <small>(opcional: què s'hi veuria al microscopi)</small><textarea id="rvFEsq" maxlength="600" rows="2" style="min-height:56px"></textarea></label>
+   <label>Font <small>(opcional: article, guia, llibre o enllaç)</small><input type="text" id="rvFont" maxlength="600"></label>
+   ${idFields()}
+   <div class="rv-row"><button type="button" class="rv-btn pri" data-rvsend>Publica la proposta</button><button type="button" class="rv-btn" data-rvclose>Cancel·la</button></div>`,rect);
+  const n=pop.querySelector("#rvFNom");if(n)n.focus({preventScroll:true});}
+async function sendForma(){const ctx=draft.ctx,id=ctx.id,rows=rowsOf(id);
+  const nom=sp(pop.querySelector("#rvFNom").value);const vals=[...pop.querySelectorAll(".rv-fc")].map(x=>sp(x.value));
+  const esq=sp(pop.querySelector("#rvFEsq").value),font=sp(pop.querySelector("#rvFont").value);const ps=pop.querySelector("#rvFPos");
+  const err=readId();if(err)return showErr(err);
+  if(!nom)return showErr(isAgr(id)?"Escriu el nom de la malaltia.":"Escriu el nom de la forma.");
+  if(!vals.some(Boolean))return showErr("Descriu-la almenys en un dels camps.");
+  if(rows.some(r=>same(r[0],nom)))return showErr("Aquesta forma ja és a la taula. Si vols canviar-la, selecciona'n el text.");
+  const despres=ps&&ps.value!==""?rows[+ps.value][0]:null;
+  const camps=ctx.labs.map((l,i)=>[l,vals[i]]).filter(x=>x[1]);
+  const text=[`${formaLab(id)}: ${nom}${despres?` (després de «${despres}»)`:" (al final de la taula)"}`,...camps.map(([l,v])=>`${l}: ${v}`),...(esq?["Esquema: "+esq]:[])].join("\n");
+  setBusy(true);
+  try{await api({accio:"proposa",ambit:"contingut",tipus:"afegir",lloc:ctx.lloc,ancora:{forma:{nom,despres,camps,esquema:esq},ap:"Tipus i formes"},text,font});closePop();toast("Proposta publicada.");}
+  catch(e){setBusy(false);showErr(e.message);}}
+function helpPop(rect){cardId=null;draft=null;openPop(`${head("Com proposar un canvi","Mode corrector")}
+  <ul class="rv-help">
+   <li><b>Corregir, eliminar, preguntar o afegir al glossari</b> Selecciona el text i tria l'opció a la barra que apareix.</li>
+   <li><b>Afegir text</b> Passa per sobre d'un paràgraf i toca el botó <span class="rv-k">+</span> de la cantonada.</li>
+   <li><b>Forma o subtipus nou</b> A la fitxa, botó <span class="rv-k">+ Forma o subtipus nou</span> de la capçalera o del final de «Tipus i formes». També el <span class="rv-k">+ Forma nova</span> de cada forma, per posar-la just després.</li>
+   <li><b>Imatges i esquemes</b> Clica el punt exacte de la foto o del dibuix.</li>
+   <li><b>Organització</b> Botó «Proposa un canvi d'organització» de cada fitxa, subapartat o grup de l'atles (moure, fusionar, separar…).</li>
+   <li><b>La web</b> «Proposta general» d'aquesta franja: funcionalitats, apartats nous, millores.</li>
+   <li><b>Revisat</b> «Marca com a corregida» quan hagis repassat una fitxa o un subapartat.</li></ul>
+  <div class="rv-row"><button type="button" class="rv-btn pri" data-rvclose>Entesos</button></div>`,rect);}
+
 /* ---------- interfície: barra, finestra, franja, avisos ---------- */
 const mk=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;};
 const bar=mk("div","rv-bar rv-ui");bar.hidden=true;bar.setAttribute("role","toolbar");bar.setAttribute("aria-label","Proposa un canvi sobre el text seleccionat");
 bar.innerHTML=[["corregir","Corregeix"],["eliminar","Elimina"],["afegir","Afegeix després"],["glossari","Al glossari"],["dubte","Dubte"]].map(([k,t])=>`<button type="button" data-rvsel="${k}">${t}</button>`).join("");
 const pop=mk("div","rv-pop rv-ui");pop.hidden=true;pop.setAttribute("role","dialog");pop.setAttribute("aria-modal","false");
-const plus=mk("button","rv-plus rv-ui","+");plus.type="button";plus.hidden=true;plus.title="Afegeix contingut aquí";plus.setAttribute("aria-label","Proposa afegir contingut després d'aquest bloc");
+const plus=mk("button","rv-plus rv-ui","+");const hl=mk("div","rv-hl rv-ui");hl.hidden=true;plus.type="button";hidePlus();plus.title="Afegeix contingut aquí";plus.setAttribute("aria-label","Proposa afegir contingut després d'aquest bloc");
 const band=mk("div","rv-band rv-ui");band.hidden=true;
 const toastEl=mk("div","rv-toast rv-ui");toastEl.hidden=true;toastEl.setAttribute("role","status");
-document.body.append(bar,pop,plus,band,toastEl);
+document.body.append(bar,pop,plus,hl,band,toastEl);
 let toastT=null;function toast(t){toastEl.textContent=t;toastEl.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>toastEl.hidden=true,3600);}
 
 let popAnchor=null,tmpPin=null,selData=null;
@@ -4473,7 +4556,7 @@ function openForm(kind,ctx,rect){const F=FORM[kind];draft={kind,ctx};
    ${F.nofont?"":`<label>Font <small>(opcional: article, guia, llibre o enllaç)</small><input type="text" id="rvFont" maxlength="600"></label>`}
    ${idFields()}
    <div class="rv-row"><button type="button" class="rv-btn pri" data-rvsend>Publica la proposta</button><button type="button" class="rv-btn" data-rvclose>Cancel·la</button></div>`,rect);}
-async function sendForm(){if(!draft)return;const F=FORM[draft.kind],ctx=draft.ctx;
+async function sendForm(){if(!draft)return;if(draft.kind==="forma")return sendForma();const F=FORM[draft.kind],ctx=draft.ctx;
   const txt=(pop.querySelector("#rvTxt")||{}).value||"";const font=((pop.querySelector("#rvFont")||{}).value||"").trim();
   const err=readId();if(err)return showErr(err);
   let tipus=draft.kind,ambit="contingut";const A=Object.assign({},ctx.ancora||{});
@@ -4492,7 +4575,8 @@ function cardHTML(p){const A=anc(p),c=recompte(p.id),vs=votsDe(p.id),rs=respDe(p
   let body="";
   if(A.t&&p.tipus!=="assenyalar")body+=`<p class="rv-q"><small>${p.tipus==="afegir"?"Després de":p.tipus==="dubte"?"Sobre":p.tipus==="terme_nou"?"Al text":"Text actual"}</small>${h(p.tipus==="afegir"?"…"+A.t.slice(-90):A.t)}</p>`;
   if(A.terme)body+=`<p class="rv-q new"><small>Terme</small>${h(A.terme)}</p>`;
-  if(p.text)body+=`<p class="rv-q new"><small>${p.tipus==="corregir"?"Proposta":p.tipus==="dubte"?"Pregunta":p.tipus==="eliminar"?"Motiu":"Proposta"}</small>${h(p.text)}</p>`;
+  if(A.forma){const F=A.forma;body+=`<div class="rv-q new rv-fm"><small>${F.despres?"Després de «"+h(F.despres)+"»":"Al final de la taula"}</small><b>${h(F.nom)}</b><dl>${(F.camps||[]).map(([l,v])=>`<dt>${h(l)}</dt><dd>${h(v)}</dd>`).join("")}${F.esquema?`<dt>Esquema</dt><dd>${h(F.esquema)}</dd>`:""}</dl></div>`;}
+  else if(p.text)body+=`<p class="rv-q new"><small>${p.tipus==="corregir"?"Proposta":p.tipus==="dubte"?"Pregunta":p.tipus==="eliminar"?"Motiu":"Proposta"}</small>${h(p.text)}</p>`;
   if(p.font)body+=`<p class="rv-who">Font: ${/^https?:\/\//.test(p.font)?`<a href="${h(p.font)}" target="_blank" rel="noopener">${h(p.font)}</a>`:h(p.font)}</p>`;
   if(orphan.has(p.id)&&!C)body+=`<p class="rv-who">No he trobat aquest fragment a la versió actual de la guia.</p>`;
   if(C)body+=`<div class="rv-res${e==="rebutjada"?" no":""}"><b>${h(RES[C.e]||C.e)}</b> · ${h(dia(C.v))}${C.n?`<br>${h(C.n)}`:""}</div>`;
@@ -4508,7 +4592,7 @@ function cardHTML(p){const A=anc(p),c=recompte(p.id),vs=votsDe(p.id),rs=respDe(p
   if(mine&&!C)acts+=`<div class="rv-row"><button type="button" class="rv-btn" data-rvret>Retira la proposta</button></div>`;
   if(ME.admin)acts+=`<div class="rv-row"><button type="button" class="rv-btn" data-rvadm>Tanca-la (administració)</button></div>`;
   const go=cardGo?`<button type="button" class="rv-link" data-rvgo="${h(p.id)}">Ves al lloc</button>`:"";
-  return `${head(TIP[p.tipus]||p.tipus,llocLabel(p.lloc)+(A.ap&&!p.lloc.startsWith("s:")?" › "+A.ap:""))}
+  return `${head(tipOf(p),llocLabel(p.lloc)+(A.ap&&!p.lloc.startsWith("s:")?" › "+A.ap:""))}
    <div class="rv-row">${chip(p)}<span class="rv-who">${h(p.autor)} · ${h(dia(p.data))}</span>${go}</div>
    ${body}<div class="rv-sep"></div><div class="rv-votes">${votes}${vlist}</div>
    ${rlist}<div class="rv-row"><input type="text" id="rvResp" maxlength="2000" placeholder="${p.tipus==="dubte"?"Respon el dubte":"Afegeix un comentari"}" style="flex:1 1 200px"><button type="button" class="rv-btn" data-rvresp>Envia</button></div>
@@ -4529,9 +4613,9 @@ function whoPop(rect){cardId=null;draft=null;openPop(`${head("Qui ets",ME.codi?"
 
 /* franja del mode corrector */
 function renderBand(){band.hidden=!MODE;if(!MODE)return;
-  band.innerHTML=`<b>Mode corrector</b><span>Selecciona text, toca + al final d'un bloc o clica una imatge per proposar canvis.</span>${netErr?`<span>· ${h(netErr)}</span>`:""}<span class="sp"></span>
+  band.innerHTML=`<b>Mode corrector</b><span>Selecciona text, fes servir els botons + o clica una imatge.</span><button type="button" data-rvhelp>Com proposar?</button>${netErr?`<span>· ${h(netErr)}</span>`:""}<span class="sp"></span>
   ${ME.nom?`<span>Ets <b>${h(ME.nom)}</b></span>`:""}<button type="button" data-rvwho>${ME.nom&&ME.codi?"Canvia el nom":"Identifica't"}</button><button type="button" data-rvweb>Proposta general</button><button type="button" data-rvmode>Surt <kbd>Ctrl+K</kbd></button>`;}
-function setMode(on){MODE=!!on;document.body.classList.toggle("rv-mode",MODE);if(!MODE){plus.hidden=true;}
+function setMode(on){MODE=!!on;document.body.classList.toggle("rv-mode",MODE);if(!MODE){hidePlus();}
   document.querySelectorAll("[data-rvmode].rv-tg,.rv-dt").forEach(b=>b.setAttribute("aria-pressed",MODE?"true":"false"));
   renderBand();applyMarks();if(MODE&&(!ME.codi||!ME.nom))whoPop(null);}
 
@@ -4557,17 +4641,23 @@ let barDown=0;bar.addEventListener("pointerdown",()=>{barDown=Date.now();});
 bar.addEventListener("click",e=>{const b=e.target.closest("[data-rvsel]");if(!b||!selData)return;const k=b.dataset.rvsel,rect=selData.range.getBoundingClientRect();const d=selData;hideBar();
   if(k==="glossari"){openForm("terme_nou",{lloc:d.lloc,ancora:d.ancora},rect);return;}
   openForm(k,{lloc:d.lloc,ancora:Object.assign({},d.ancora,k==="afegir"?{after:true}:{})},rect);});
-addEventListener("scroll",()=>{placeBar();if(!plus.hidden&&plusTarget){const r=plusTarget.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight){plus.hidden=true;plusTarget=null;}else showPlus(plusTarget);}},{capture:true,passive:true});
+addEventListener("scroll",()=>{placeBar();if(!plus.hidden&&plusTarget){const r=plusTarget.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight){hidePlus();plusTarget=null;}else showPlus(plusTarget);}},{capture:true,passive:true});
 addEventListener("resize",()=>{placeBar();if(!pop.hidden)placePop(popAnchor);});
 
 /* ---------- botó + (mode corrector) ---------- */
 const BLOCK="p,li,dd,.ty,h3,h4,td,.step,.ltile,.hterm,.pcard";
 let plusTarget=null;
-function showPlus(el){const c=ctxOf(el);if(!c){plus.hidden=true;return;}const r=el.getBoundingClientRect();if(!r.width){plus.hidden=true;return;}
-  plusTarget=el;plus.hidden=false;plus.style.left=Math.min(r.right+4,innerWidth-34)+"px";plus.style.top=Math.max(4,r.top-2)+"px";}
-document.addEventListener("pointermove",e=>{if(!MODE||e.pointerType!=="mouse")return;if(e.target.closest&&e.target.closest(".rv-ui"))return;const b=e.target.closest&&e.target.closest(BLOCK);if(b&&(b!==plusTarget||plus.hidden))showPlus(b);else if(!b&&!plus.matches(":hover")){plus.hidden=true;plusTarget=null;}},{passive:true});
+function hidePlus(){plus.hidden=true;hl.hidden=true;}
+function showPlus(el){const c=ctxOf(el);if(!c){hidePlus();return;}const r=el.getBoundingClientRect();if(!r.width){hidePlus();return;}
+  const fm=!!(c.f&&el.matches(".ty"));plusTarget=el;plus.classList.toggle("wide",fm);plus.textContent=fm?"+ Forma nova":"+";
+  plus.title=fm?"Proposa una forma nova just després d'aquesta":"Proposa afegir text just després d'aquest bloc";plus.setAttribute("aria-label",plus.title);
+  plus.hidden=false;const W=plus.offsetWidth;plus.style.left=Math.max(4,Math.min(r.right-W+(fm?-12:10),innerWidth-W-6))+"px";plus.style.top=Math.max(4,fm?Math.min(r.bottom-12,innerHeight-(MODE?84:30)):r.top-12)+"px";
+  hl.hidden=false;hl.style.left=(r.left-3)+"px";hl.style.top=(r.top-3)+"px";hl.style.width=(r.width+6)+"px";hl.style.height=(r.height+6)+"px";}
+document.addEventListener("pointermove",e=>{if(!MODE||e.pointerType!=="mouse")return;if(e.target.closest&&e.target.closest(".rv-ui"))return;const b=e.target.closest&&e.target.closest(BLOCK);if(b&&(b!==plusTarget||plus.hidden))showPlus(b);else if(!b&&!plus.matches(":hover")){hidePlus();plusTarget=null;}},{passive:true});
 document.addEventListener("pointerdown",e=>{if(!MODE||e.pointerType==="mouse")return;if(e.target.closest&&e.target.closest(".rv-ui,button,a,input,summary"))return;const b=e.target.closest&&e.target.closest(BLOCK);if(b)showPlus(b);},{passive:true});
-plus.addEventListener("click",()=>{const el=plusTarget;plus.hidden=true;if(!el)return;const c=ctxOf(el);if(!c)return;const ix=index(c.root);
+plus.addEventListener("click",()=>{const el=plusTarget;hidePlus();if(!el)return;const c=ctxOf(el);if(!c)return;
+  if(c.f&&el.matches(".ty")){const i=[...el.parentElement.querySelectorAll(":scope>.ty")].indexOf(el);openForma(c.f,i>=0?i:null,el.getBoundingClientRect());return;}
+  const ix=index(c.root);
   const tn=[];const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const p=n.parentElement;return(!p||p.closest(SKIPTXT))?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT;}});let n;while((n=w.nextNode()))tn.push(n);
   if(!tn.length)return;const a0=ix.pos.get(tn[0])[0];let e=ix.pos.get(tn[tn.length-1])[tn[tn.length-1].nodeValue.length];while(e>a0&&ix.s[e-1]===" ")e--;
   const s=Math.max(a0,e-60);openForm("afegir",{lloc:llocOf(c,el),ancora:{t:ix.s.slice(s,e),pre:ix.s.slice(Math.max(0,s-40),s),suf:ix.s.slice(e,e+40),ap:apOf(el),after:true}},el.getBoundingClientRect());});
@@ -4587,6 +4677,8 @@ document.addEventListener("click",e=>{const t=e.target;if(!t.closest)return;let 
   if((b=t.closest("[data-rvmode]"))){setMode(!MODE);return;}
   if((b=t.closest("[data-rvwho]"))){whoPop(b.getBoundingClientRect());return;}
   if((b=t.closest("[data-rvwhos]"))){const err=readId();if(err)return showErr(err);closePop();toast("Desat.");load(false);renderBand();return;}
+  if((b=t.closest("[data-rvforma]"))){openForma(b.dataset.rvforma,null,b.getBoundingClientRect());return;}
+  if((b=t.closest("[data-rvhelp]"))){helpPop(b.getBoundingClientRect());return;}
   if((b=t.closest("[data-rvweb]"))){openForm("web",{lloc:"web"},b.getBoundingClientRect());return;}
   if((b=t.closest("[data-rvorg]"))){openForm("org",{lloc:b.dataset.rvorg},b.getBoundingClientRect());return;}
   if((b=t.closest("[data-rvdef]"))){const k=b.dataset.rvdef;const g=GLOS.find(x=>sp(x.t)===k);openForm("definicio",{lloc:"glos:"+k,quote:g?g.d:""},b.getBoundingClientRect());return;}
@@ -4608,8 +4700,8 @@ document.addEventListener("click",e=>{const t=e.target;if(!t.closest)return;let 
   if((b=t.closest("[data-rvret]"))){act({accio:"estat",proposta:cardId,estat:"retirada"},"Proposta retirada.");return;}
   if((b=t.closest("[data-rvadm]"))){act({accio:"estat",proposta:cardId,estat:"arxivada",admin:ME.admin},"Proposta tancada.");return;}
 });
-document.addEventListener("mousedown",e=>{if(pop.hidden)return;const t=e.target;if(pop.contains(t)||bar.contains(t)||(t.closest&&t.closest("[data-rvp],[data-rvitem],[data-rvlist],[data-rvorg],[data-rvwho],[data-rvweb],[data-rvdef],.rv-plus")))return;
-  if(draft&&pop.querySelector("#rvTxt")&&pop.querySelector("#rvTxt").value.trim()&&pop.querySelector("#rvTxt").value!==((draft.ctx.ancora||{}).t||""))return;closePop();cardId=null;});
+document.addEventListener("mousedown",e=>{if(pop.hidden)return;const t=e.target;if(pop.contains(t)||bar.contains(t)||(t.closest&&t.closest("[data-rvp],[data-rvitem],[data-rvlist],[data-rvorg],[data-rvwho],[data-rvweb],[data-rvdef],[data-rvforma],[data-rvhelp],.rv-plus")))return;
+  if(draft&&[...pop.querySelectorAll("textarea,input[type=text]:not(#rvNom):not(#rvFont)")].some(x=>x.value.trim()&&x.value!==((draft.ctx.ancora||{}).t||"")))return;closePop();cardId=null;});
 addEventListener("keydown",e=>{
   if((e.ctrlKey||e.metaKey)&&!e.altKey&&!e.shiftKey&&(e.key==="k"||e.key==="K")){e.preventDefault();e.stopPropagation();setMode(!MODE);return;}
   if(e.key==="Escape"&&!pop.hidden){e.preventDefault();e.stopImmediatePropagation();closePop();cardId=null;return;}
@@ -4663,8 +4755,8 @@ sec.addEventListener("click",async e=>{const t=e.target;
 sec.addEventListener("input",e=>{if(e.target.matches("#rvFQ"))renderList();});
 sec.addEventListener("change",e=>{if(e.target.matches("#rvFA,#rvFE,#rvFM"))renderList();});
 sec.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("#rvANom,#rvACodi"))$1("#rvAOk").click();});
-function itemHTML(p){const c=recompte(p.id),A=anc(p);const ex=p.tipus==="corregir"?`«${A.t||""}» → «${p.text}»`:(A.terme?A.terme+(p.text?": "+p.text:""):p.text||A.t||"");
-  return `<button type="button" class="rv-item" data-rvitem="${h(p.id)}"><span class="t">${chip(p)}<b>${h(TIP[p.tipus]||p.tipus)}</b><span class="muted">${h(llocLabel(p.lloc))}</span></span>
+function itemHTML(p){const c=recompte(p.id),A=anc(p);const ex=A.forma?A.forma.nom:p.tipus==="corregir"?`«${A.t||""}» → «${p.text}»`:(A.terme?A.terme+(p.text?": "+p.text:""):p.text||A.t||"");
+  return `<button type="button" class="rv-item" data-rvitem="${h(p.id)}"><span class="t">${chip(p)}<b>${h(tipOf(p))}</b><span class="muted">${h(llocLabel(p.lloc))}</span></span>
    <span class="v">${p.tipus==="dubte"?`Jo també ${c.jotambe}`:`✓ ${c.acord} · ✗ ${c.contra} · – ${c.innecessaria}`}</span><span class="x">${h(ex)}</span><span class="m">${h(p.autor)} · ${h(dia(p.data))}${orphan.has(p.id)&&!CANV[p.id]?" · fragment no trobat a la guia actual":""}</span></button>`;}
 function renderList(){if(!DATA)return;const fa=$1("#rvFA").value,fe=$1("#rvFE").value,fq=sp($1("#rvFQ").value).toLowerCase(),fm=$1("#rvFM").checked;
   let ps=PR().slice();
@@ -4684,11 +4776,12 @@ function genExport(){if(!DATA)return;const today=new Date().toISOString().slice(
   const B={favor:[],discutida:[],contra:[],pocs:[],dubte:[],decisio:[],reob:[]};
   open.forEach(p=>{if(estat(p)==="reoberta")B.reob.push(p);else if(p.tipus==="dubte")B.dubte.push(p);else if(p.ambit==="organitzacio"||p.ambit==="web")B.decisio.push(p);else B[consens(p)].push(p);});
   const fmt=p=>{const A=anc(p),c=recompte(p.id),vs=votsDe(p.id).filter(v=>v.motiu),rs=respDe(p.id);const L=[];
-    L.push(`### ${p.id} · ${TIP[p.tipus]||p.tipus} · ${llocLabel(p.lloc)}${A.ap&&!p.lloc.startsWith("s:")?" › "+A.ap:""}`);
+    L.push(`### ${p.id} · ${tipOf(p)} · ${llocLabel(p.lloc)}${A.ap&&!p.lloc.startsWith("s:")?" › "+A.ap:""}`);
     L.push(`- Lloc (clau): \`${p.lloc}\`${A.img?` · imatge \`${A.img}\` · punt x=${A.x}% y=${A.y}%`:""}`);
     if(A.t)L.push(`- ${p.tipus==="afegir"?"Inserir just després de":"Text de la guia"}: «${A.t}»`),L.push(`- Context: «…${A.pre||""}[${A.t}]${A.suf||""}…»`);
     if(A.terme)L.push(`- Terme: ${A.terme}`);
-    if(p.text)L.push(`- ${p.tipus==="corregir"?"Text proposat":p.tipus==="dubte"?"Pregunta":p.tipus==="eliminar"?"Motiu":"Proposta"}: ${p.text}`);
+    if(A.forma){const F=A.forma;L.push(`- Nom: ${F.nom}`,`- Posició a «Tipus i formes»: ${F.despres?"després de «"+F.despres+"»":"al final de la taula"}`);(F.camps||[]).forEach(([l,v])=>L.push(`  - ${l}: ${v}`));if(F.esquema)L.push(`- Esquema histològic proposat: ${F.esquema}`);}
+    else if(p.text)L.push(`- ${p.tipus==="corregir"?"Text proposat":p.tipus==="dubte"?"Pregunta":p.tipus==="eliminar"?"Motiu":"Proposta"}: ${p.text}`);
     if(p.font)L.push(`- Font: ${p.font}`);
     L.push(`- Proposa: ${p.autor} (${String(p.data).slice(0,10)})`);
     L.push(p.tipus==="dubte"?`- Jo també: ${c.jotambe}`:`- Vots: D'acord ${c.acord} · En contra ${c.contra} · Innecessària ${c.innecessaria}`);

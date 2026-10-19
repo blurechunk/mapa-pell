@@ -113,3 +113,31 @@ nav.top a i.rv-n{font-style:normal;font-family:var(--f-mono);font-size:10.5px;co
 .rv-adm[open] summary{margin-bottom:8px}
 .rv-steps{margin:0;padding-left:1.2em;display:grid;gap:4px;font-size:14.5px;max-width:75ch}
 @media (max-width:560px){.rv-item{grid-template-columns:minmax(0,1fr)}.rv-item .v{justify-self:start}}
+/* botó + i bloc ressaltat */
+.rv-plus.wide{width:auto;height:24px;border-radius:12px;padding:0 10px;font:700 12px/1 var(--f-body);letter-spacing:.01em}
+.rv-hl{position:fixed;z-index:94;pointer-events:none;border:1.5px dashed var(--eosin);border-radius:8px;background:color-mix(in srgb,var(--eosin) 5%,transparent)}
+/* formes proposades a «Tipus i formes» */
+.rv-cor .rv-btn.rv-add{border-color:var(--hema);color:var(--hema);font-weight:700}
+.rv-ty{display:grid;gap:4px;align-content:start;text-align:left;font:inherit;font-size:13.5px;color:var(--ink);padding:12px 14px;border-radius:8px;border:1.5px dashed var(--eosin);background:color-mix(in srgb,var(--eosin) 6%,var(--bg));cursor:pointer}
+.rv-ty:hover{background:color-mix(in srgb,var(--eosin) 12%,var(--bg))}
+.rv-ty .k{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--eosin)}
+.rv-ty b{font-size:15px}
+.rv-ty .m{font-size:12px;color:var(--muted)}
+.rv-ty.rv-fet{border-color:var(--done);background:var(--done-soft)}
+.rv-ty.rv-no{opacity:.6}
+.rv-tyadd{display:grid;gap:4px;place-content:center;text-align:center;min-height:96px;font:inherit;color:var(--hema);padding:12px 14px;border-radius:8px;border:1.5px dashed var(--hema);background:none;cursor:pointer}
+.rv-tyadd b{font-size:14.5px}
+.rv-tyadd span{font-size:12.5px;color:var(--muted)}
+.rv-tyadd:hover{background:var(--hema-soft)}
+/* formulari de forma nova */
+.rv-fs{border:1px solid var(--line);border-radius:8px;padding:8px 10px 10px;margin:0;display:grid;gap:8px}
+.rv-fs legend{font-size:13px;font-weight:700;padding:0 4px}
+.rv-fs legend small{font-weight:400;color:var(--muted)}
+.rv-fm b{display:block;font-size:15px;margin:2px 0 4px}
+.rv-fm dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0;font-size:13.5px}
+.rv-fm dt{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding-top:2px}
+.rv-fm dd{margin:0}
+/* ajuda */
+.rv-help{margin:0;padding:0 0 0 18px;display:grid;gap:8px;font-size:14px}
+.rv-help b{display:block}
+.rv-k{display:inline-block;font-weight:700;color:var(--hema);border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:12.5px}
