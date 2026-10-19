@@ -178,11 +178,11 @@ const FONTS={
    for(const a of arts){let x;try{const t=await fetch("https://www.ebi.ac.uk/europepmc/webservices/rest/"+a.pmcid+"/fullTextXML");if(!t.ok)continue;x=new DOMParser().parseFromString(await t.text(),"application/xml");}catch(e){continue;}
     const lic=L[(a.license||"").toLowerCase()];if(!lic)continue;
     for(const f of x.querySelectorAll("fig")){const g=f.querySelector("graphic");if(!g)continue;
-     let h=g.getAttribute("xlink:href")||g.getAttributeNS("http://www.w3.org/1999/xlink","href")||"";if(!h)continue;if(!/\.(jpe?g|png|gif|tiff?)$/i.test(h))h+=".jpg";
+     let h=g.getAttribute("xlink:href")||g.getAttributeNS("http://www.w3.org/1999/xlink","href")||"";if(!h)continue;h=h.replace(/\.(gif|tiff?|eps)$/i,"");if(!/\.(jpe?g|png)$/i.test(h))h+=".jpg";
      const etiq=txt((f.querySelector("label")||{}).textContent||"");const cap=txt((f.querySelector("caption")||{}).textContent||"");
      if(/reproduced|reprinted|permission|©|copyright/i.test(cap)){amagades++;continue;}
      if(mots.length&&!mots.some(w=>cap.toLowerCase().includes(w))){continue;}
-     const img="https://europepmc.org/articles/"+a.pmcid+"/bin/"+h;
+     const img="https://europepmc.org/api/fulltextRepo?pmcId="+a.pmcid+"&type=FILE&fileName="+encodeURIComponent(h)+"&mimeType="+(/\.png$/i.test(h)?"image/png":"image/jpeg")+"&version=1";
      r.push({font:"europepmc",id:"e:"+a.pmcid+":"+h,titol:(etiq?etiq+" · ":"")+txt(a.title),pagina:"https://europepmc.org/article/PMC/"+a.pmcid.replace(/^PMC/,""),img,mini:img,
       autor:(a.authorString||"").replace(/\.$/,"")+" · "+(a.journalInfo&&a.journalInfo.journal?a.journalInfo.journal.title:(a.journalTitle||""))+" ("+(a.pubYear||"")+")",
       lic:lic+" (article)",licOk:true,licUrl:"",verificar:true,desc:cap,pmcid:a.pmcid});}}
@@ -262,6 +262,7 @@ function renderRes(){const el=$("#res");if(!el)return;
  const ov=$("#ovSens");if(ov){ov.checked=!!S.ovSens;ov.onchange=()=>{S.ovSens=ov.checked;desa();RES.openverse=null;cerca();};}
  const bm=$("#bMes");if(bm)bm.onclick=()=>{PAG++;cerca(true);};
  el.querySelectorAll(".ds").forEach(d=>d.onclick=()=>d.classList.toggle("obert"));
+ el.querySelectorAll(".rc .im img").forEach(im=>{const f=()=>{im.replaceWith(Object.assign(document.createElement("span"),{className:"mut",style:"padding:10px;text-align:center;font-size:12.5px",textContent:"La imatge no s'ha pogut carregar. Obre la font per veure-la."}));};if(im.complete&&!im.naturalWidth&&im.src)f();else im.addEventListener("error",f,{once:true});});
  el.querySelectorAll(".bTria").forEach(b=>b.onclick=()=>{const x=lliures.find(y=>y.id===b.dataset.id);tria(x);});}
 
 function linkWeb(f){const q=encodeURIComponent($("#q")?$("#q").value:"");
